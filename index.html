@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro de Atividade</title>
+  <!-- Carrega o CSS do Flatpickr localmente -->
+  <link rel="stylesheet" href="flatpickr.min.css">
+  <style>
+    /* Estilos Gerais – Fonte 16px */
+    body {
+      background-color: #f0f4f8;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      font-size: 15px;
+    }
+    hr {
+      border: 0;
+      border-top: 1px solid #ccc;
+      margin: 20px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    table, th, td {
+      border: 1px solid #333;
+    }
+    thead {
+      background-color: #e0e0e0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    button {
+      background-color: #4caf50;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      padding: 8px 14px;
+      cursor: pointer;
+      margin: 4px 2px;
+      transition: background-color 0.3s;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    /* Input de quantidade: tipo text para aceitar vírgula */
+    input[type="text"] {
+      padding: 8px;
+      font-size: 15px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .delete-btn, .edit-btn, .action-btn {
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 15px;
+      margin-left: 4px;
+    }
+    .delete-btn:hover, .edit-btn:hover, .action-btn:hover {
+      color: #000;
+    }
+    /* Calendário */
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .calendar div {
+      padding: 8px;
+      text-align: center;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      font-size: 12px;
+      position: relative;
+      transition: background-color 0.3s;
+      min-height: 80px;
+    }
+    .calendar .header {
+      font-weight: bold;
+      background-color: #ddd;
+    }
+    .calendar .day-data {
+      cursor: pointer;
+      background-color: #e9f7ef;
+    }
+    .calendar .day-data:hover {
+      background-color: #cce5ff;
+    }
+    .calendar .day-data.selected-day {
+      background-color: #b3d4fc;
+    }
+    .calendar .day-data.today {
+      background-color: #b3e5fc;
+      border: 2px solid #0277bd;
+    }
+    .calendar .day-data span {
+      font-size: 12px;
+      display: inline;
+      margin-right: 4px;
+    }
+    .calendar .day-data span:not(:last-child)::after {
+      content: "|";
+      margin: 0 4px;
+      color: #aaa;
+    }
+    /* Tabelas */
+    .past-day {
+      background-color: #f5f5f5;
+    }
+    /* Seção do Topo */
+    .top-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .input-section {
+      flex: 1 1 300px;
+    }
+    .highlight-section {
+      flex: 1 1 300px;
+    }
+    #todayHighlight {
+      background-color: #fff9c4;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      font-weight: bold;
+    }
+    /* Os resultados dentro de #todayHighlight span.result serão exibidos em vermelho */
+    #todayHighlight span.result {
+      color: red;
+    }
+    #trophyHint {
+      color: #8B0000;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    /* Status de registro */
+    #statusMessage {
+      margin-left: 10px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    /* Área principal */
+    .main-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: nowrap;
+    }
+    .left-column {
+      flex: 0 0 50%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .right-column {
+      flex: 0 0 50%;
+    }
+    /* Seção Inferior */
+    .bottom-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    #rankingPanel {
+      flex: 1 1 300px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: flex-start;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+      padding: 12px;
+    }
+    #notesContainer {
+      flex: 2 1 400px;
+    }
+    #notesContainer textarea {
+      width: 100%;
+      max-width: 600px;
+      height: 70px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    #saveFeedback {
+      color: green;
+      font-weight: bold;
+      display: none;
+      margin-top: 5px;
+    }
+    /* Ícones dos prêmios */
+    .prize-square {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+      border: 1px solid #000;
+    }
+    .prize-first { background-color: #FFD700; }
+    .prize-second { background-color: #C0C0C0; }
+    .prize-third { background-color: #CD7F32; }
+    .record-icon {
+      margin-left: 4px;
+    }
+    #championDisplay {
+      margin-top: 10px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <!-- Topo -->
+  <div class="top-container">
+    <div class="input-section">
+      <h1>Registro de Atividade</h1>
+      <div id="inputContainer" style="margin-top: 20px;">
+        <label for="quantidade">Quantidade:</label>
+        <input type="text" id="quantidade" step="0.1" placeholder="Digite a quantidade">
+        <label for="horaInput">Hora:</label>
+        <input type="text" id="horaInput" placeholder="hh:mm">
+        <button id="registrarBtn" title="Registrar novo evento">Registrar</button>
+        <span id="statusMessage"></span>
+      </div>
+    </div>
+    <div class="highlight-section">
+      <div id="todayHighlight">Hoje (xx/xx/xxxx): <span class="result"></span></div>
+      <div id="trophyHint"></div>
+    </div>
+  </div>
+  <hr>
+  <!-- Área principal -->
+  <div class="main-container">
+    <div class="left-column">
+      <div class="table-wrapper" id="registrosSection">
+        <h2>Registros Diários - <span id="selectedDateDisplay"></span></h2>
+        <table id="registrosTable">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Dia</th>
+              <th>Hora</th>
+              <th>Quantidade</th>
+              <th>Tempo desde último (min)</th>
+              <th>Intervalo do dia anterior</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- As linhas serão geradas dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrapper" id="resumoSection">
+        <h2>Resumo Diário</h2>
+        <table id="resumoTable">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Dia</th>
+              <th>Total Quantidade</th>
+              <th>Nº de Registros</th>
+              <th>Maior Intervalo Intra (min)</th>
+              <th>Intervalo do dia anterior</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- As linhas serão geradas dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="right-column">
+      <h2 id="mesAtual">Calendário Mensal</h2>
+      <div class="calendar" id="calendar">
+        <!-- O calendário será gerado dinamicamente -->
+      </div>
+    </div>
+  </div>
+  <hr>
+  <!-- Seção Inferior -->
+  <div class="bottom-container">
+    <div id="rankingPanel">
+      <!-- Ranking e Metas serão gerados dinamicamente -->
+    </div>
+    <div id="notesContainer">
+      <h2>Anotações do Dia (<span id="notesDateDisplay"></span>)</h2>
+      <textarea id="dailyNotes" placeholder="Escreva suas anotações aqui..."></textarea>
+      <button id="salvarNotasBtn">Salvar Anotações</button>
+      <div id="saveFeedback">Salvo!</div>
+    </div>
+  </div>
+  <hr>
+  <!-- Botões de Exportar/Importar -->
+  <button id="exportarBtn" title="Exportar CSV Backup">Exportar CSV Backup</button>
+  <button id="importarBtn" title="Importar CSV Backup">Importar CSV Backup</button>
+  <input type="file" id="fileInput" accept=".csv" style="display: none;">
+  <!-- Carrega o Flatpickr e os scripts locais -->
+  <script src="flatpickr.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
