@@ -397,6 +397,9 @@ function atualizarTabelas() {
       </tr>
     `;
   });
+  if (rDia.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-hint">Sem registros neste dia.</td></tr>`;
+  }
   atualizarSelectedDateDisplay();
   carregarNotas(selectedDate);
 }
@@ -409,7 +412,12 @@ function atualizarResumoTable() {
   tbody.innerHTML = "";
   let hojeObj = new Date();
   hojeObj.setHours(0, 0, 0, 0);
-  Object.keys(resumoDiario)
+  let chavesResumo = Object.keys(resumoDiario);
+  if (chavesResumo.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-hint">Nenhum resumo ainda. Registre um evento para começar.</td></tr>`;
+    return;
+  }
+  chavesResumo
     .sort((a, b) => {
       let d1 = parseDateFromDDMMYYYY(a);
       let d2 = parseDateFromDDMMYYYY(b);
@@ -417,7 +425,7 @@ function atualizarResumoTable() {
     })
     .forEach(dateStr => {
       let dataObj = parseDateFromDDMMYYYY(dateStr);
-      let bg = dataObj < hojeObj ? "#f5f5f5" : "#ffffff";
+      let ehPassado = dataObj < hojeObj;
       let r = resumoDiario[dateStr];
       let totalQ = formatNumber(r.totalQuantidade, 1);
       let numReg = r.numeroRegistros;
@@ -454,7 +462,7 @@ function atualizarResumoTable() {
       });
       
       tbody.innerHTML += `
-        <tr style="background-color:${bg};">
+        <tr class="${ehPassado ? "past-day" : ""}">
           <td>${dateStr}</td>
           <td>${weekDay}</td>
           <td>${totalQ} ${iconQ}</td>
@@ -492,7 +500,7 @@ function atualizarCalendario() {
   const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   diasSemana.forEach(d => calDiv.innerHTML += `<div class="header">${d}</div>`);
   for (let i = 0; i < primeiroDia.getDay(); i++){
-    calDiv.innerHTML += `<div></div>`;
+    calDiv.innerHTML += `<div class="cal-empty"></div>`;
   }
   let rankingQ = getRankingForQuantidade();
   let rankingF = getRankingForFrequencia();
@@ -504,32 +512,43 @@ function atualizarCalendario() {
     cDate.setHours(0, 0, 0, 0);
     let dateStr = formatDate(cDate);
     let r = resumoDiario[dateStr];
-    let cellText = (r && r.numeroRegistros > 0)
-      ? ` ${d}<br>T:${formatNumber(r.totalQuantidade, 1)} | R:${r.numeroRegistros} | I:${r.maiorIntervaloIntra}min`
-      : d;
-    let icons = "";
+    let temRegistros = !!(r && r.numeroRegistros > 0);
+
+    // Linha de estatísticas (só quando há registros no dia)
+    let statsHtml = temRegistros
+      ? `<div class="cal-stats">T:${formatNumber(r.totalQuantidade, 1)} · R:${r.numeroRegistros} · I:${r.maiorIntervaloIntra}min</div>`
+      : "";
+
     // Marca verde nos dias sem registro dentro do período de uso (meta atingida)
     let ehDiaZeroElegivel = primeiroRegistrado && cDate >= primeiroRegistrado
-      && cDate <= hojeObj && (!r || r.numeroRegistros === 0);
+      && cDate <= hojeObj && !temRegistros;
+    let ehForaPeriodo = !primeiroRegistrado || cDate < primeiroRegistrado || cDate > hojeObj;
+
+    let badges = "";
     if (ehDiaZeroElegivel)
-      icons += `<span style="font-size:20px;color:#2e7d32;" title="Dia sem registro — meta atingida">✓</span>`;
+      badges += `<span class="cal-badge zero-check" title="Dia sem registro — meta atingida">✓</span>`;
     if (rankingQ.length > 0 && rankingQ[0].date === dateStr)
-      icons += `<span style="font-size:24px;" title="Troféu Dourado - Menor Quantidade">📉</span>`;
+      badges += `<span class="cal-badge" title="Troféu Dourado - Menor Quantidade">📉</span>`;
     if (rankingF.length > 0 && rankingF[0].date === dateStr)
-      icons += `<span style="font-size:24px;" title="Troféu Dourado - Menor Frequência">🏅</span>`;
+      badges += `<span class="cal-badge" title="Troféu Dourado - Menor Frequência">🏅</span>`;
     if (rankingI.length > 0 && rankingI[0].date === dateStr)
-      icons += `<span style="font-size:24px;" title="Troféu Dourado - Maior Intervalo Intra">⏱</span>`;
+      badges += `<span class="cal-badge" title="Troféu Dourado - Maior Intervalo Intra">⏱</span>`;
     if (maiorTotalObj.date === dateStr)
-      icons += `<span style="font-size:24px;" title="Troféu Dourado - Maior Intervalo Total">🏆</span>`;
+      badges += `<span class="cal-badge" title="Troféu Dourado - Maior Intervalo Total">🏆</span>`;
+
     let dayDiv = document.createElement("div");
     dayDiv.className = "day-data";
+    if (temRegistros) dayDiv.classList.add("has-data");
+    if (ehDiaZeroElegivel) dayDiv.classList.add("zero-day");
+    if (ehForaPeriodo) dayDiv.classList.add("out-range");
     if (dateStr === selectedDate) dayDiv.classList.add("selected-day");
     if (dateStr === formatDate(hojeObj)) dayDiv.classList.add("today");
     dayDiv.innerHTML = `
-      <div style="position: relative;">
-        ${icons ? `<div class="medals" style="position: absolute; top: 2px; right: 2px;">${icons}</div>` : ""}
+      <div class="cal-top">
+        <span class="cal-daynum">${d}</span>
+        <span class="cal-badges">${badges}</span>
       </div>
-      ${cellText}
+      ${statsHtml}
     `;
     dayDiv.dataset.date = dateStr;
     dayDiv.addEventListener("click", () => {
