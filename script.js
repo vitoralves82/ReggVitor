@@ -42,6 +42,28 @@ function parseDateFromDDMMYYYY(str) {
   return new Date(y, m, d);
 }
 
+// Valida uma string de hora "HH:MM" na faixa 00:00–23:59.
+// Retorna {h, m} se válida, ou null se inválida.
+function parseHoraValida(str) {
+  let partes = str.split(":");
+  if (partes.length < 2) return null;
+  let h = parseInt(partes[0], 10);
+  let m = parseInt(partes[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return { h, m };
+}
+
+// Escapa um campo para CSV conforme RFC 4180: se contém vírgula, aspas ou
+// quebra de linha, envolve em aspas e duplica as aspas internas.
+function escaparCSV(valor) {
+  let s = String(valor);
+  if (/[",\n\r]/.test(s)) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
 function convertMinToHM(min) {
   let m = Math.floor(min);
   let h = Math.floor(m / 60);
@@ -67,22 +89,49 @@ let selectedDate = formatDate(new Date());
 // =======================
 // Funções de Ranking
 // =======================
-function getRankingForQuantidade() {
+
+// Retorna a data (00:00) do primeiro registro de toda a base, ou null se vazia.
+function getPrimeiroDiaRegistrado() {
+  if (registros.length === 0) return null;
+  let minTs = registros[0].timestamp;
+  registros.forEach(r => { if (r.timestamp < minTs) minTs = r.timestamp; });
+  let d = new Date(minTs);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Retorna todos os dias elegíveis do mês corrente: entre o primeiro registro geral
+// e hoje (inclusive). Dias sem registro entram como "dia zero" (resumo = null).
+// É isso que permite premiar os dias de consumo zero, os melhores para a meta.
+function getDiasCandidatosMes() {
   let current = new Date();
-  let currentMonth = current.getMonth();
-  let currentYear = current.getFullYear();
-  let ranking = [];
-  Object.keys(resumoDiario).forEach(dt => {
-    let dateObj = parseDateFromDDMMYYYY(dt);
-    if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
-      let r = resumoDiario[dt];
-      if (r.numeroRegistros > 0)
-        ranking.push({ date: dt, value: r.totalQuantidade, ts: dateObj.getTime() });
-    }
+  let mes = current.getMonth();
+  let ano = current.getFullYear();
+  let hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  let primeiro = getPrimeiroDiaRegistrado();
+  if (!primeiro) return [];
+  let dias = [];
+  let ultimoDiaMes = new Date(ano, mes + 1, 0).getDate();
+  for (let d = 1; d <= ultimoDiaMes; d++) {
+    let dia = new Date(ano, mes, d);
+    dia.setHours(0, 0, 0, 0);
+    if (dia < primeiro || dia > hoje) continue;
+    let dateStr = formatDate(dia);
+    dias.push({ date: dateStr, ts: dia.getTime(), resumo: resumoDiario[dateStr] || null });
+  }
+  return dias;
+}
+
+function getRankingForQuantidade() {
+  // Inclui dias de consumo ZERO (melhor resultado possível para a meta).
+  let ranking = getDiasCandidatosMes().map(dia => {
+    let total = (dia.resumo && dia.resumo.numeroRegistros > 0) ? dia.resumo.totalQuantidade : 0;
+    return { date: dia.date, value: total, ts: dia.ts };
   });
   ranking.sort((a, b) => {
     if (Math.abs(a.value - b.value) > EPS) return a.value - b.value;
-    return a.ts - b.ts;
+    return b.ts - a.ts; // empate: dia mais recente fica melhor posicionado
   });
   let unique = [];
   ranking.forEach(item => {
@@ -94,19 +143,15 @@ function getRankingForQuantidade() {
 }
 
 function getRankingForFrequencia() {
-  let current = new Date();
-  let currentMonth = current.getMonth();
-  let currentYear = current.getFullYear();
-  let ranking = [];
-  Object.keys(resumoDiario).forEach(dt => {
-    let dateObj = parseDateFromDDMMYYYY(dt);
-    if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
-      let r = resumoDiario[dt];
-      if (r.numeroRegistros > 0)
-        ranking.push({ date: dt, value: r.numeroRegistros, ts: dateObj.getTime() });
-    }
+  // Também inclui dias zero: 0 registros é a menor frequência possível.
+  let ranking = getDiasCandidatosMes().map(dia => {
+    let num = (dia.resumo && dia.resumo.numeroRegistros > 0) ? dia.resumo.numeroRegistros : 0;
+    return { date: dia.date, value: num, ts: dia.ts };
   });
-  ranking.sort((a, b) => a.value - b.value);
+  ranking.sort((a, b) => {
+    if (a.value !== b.value) return a.value - b.value;
+    return b.ts - a.ts; // empate: dia mais recente fica melhor posicionado
+  });
   let unique = [];
   ranking.forEach(item => {
     if (unique.length === 0 || item.value !== unique[unique.length - 1].value)
@@ -240,16 +285,19 @@ function registrarEvento() {
     let now = new Date();
     baseDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
   } else {
-    let partes = horaVal.split(":");
-    baseDate.setHours(parseInt(partes[0], 10), parseInt(partes[1], 10), 0, 0);
+    let hora = parseHoraValida(horaVal);
+    if (!hora) {
+      statusMessage.textContent = "Hora inválida! Use HH:MM (00:00–23:59).";
+      return;
+    }
+    baseDate.setHours(hora.h, hora.m, 0, 0);
   }
   let ts = baseDate.getTime();
   let reg = {
     data: formatDate(baseDate),
     hora: formatTime(baseDate),
     quantidade: q,
-    timestamp: ts,
-    tempoDesdeUltimo: "-"
+    timestamp: ts
   };
   registros.push(reg);
   updateSummaryForDay(reg.data);
@@ -262,6 +310,8 @@ function registrarEvento() {
   salvarDados();
   statusMessage.textContent = "Salvo - " + formatTime(baseDate);
   setTimeout(() => { statusMessage.textContent = ""; }, 2000);
+  // Volta o foco para a quantidade após registrar
+  quantidadeInput.focus();
 }
 
 document.getElementById("quantidade").addEventListener("keyup", function(e) {
@@ -283,11 +333,14 @@ function atualizarTabelas() {
   let firstTimestamp = rDiaAsc.length ? rDiaAsc[0].timestamp : null;
   let rDia = [...rDiaAsc].reverse();
   
+  // Calcula o "tempo desde o último" na hora da renderização, sem persistir no modelo.
+  // tempoPorReg é um Map do objeto registro -> minutos desde o registro anterior do dia.
   let maxInterval = 0;
+  let tempoPorReg = new Map();
   for (let i = 1; i < rDiaAsc.length; i++) {
     let diff = Math.floor((rDiaAsc[i].timestamp - rDiaAsc[i - 1].timestamp) / 60000);
     if (diff > maxInterval) maxInterval = diff;
-    rDiaAsc[i].tempoDesdeUltimo = diff;
+    tempoPorReg.set(rDiaAsc[i], diff);
   }
   
   // Determina prêmios para o dia (apenas no primeiro registro)
@@ -317,9 +370,10 @@ function atualizarTabelas() {
   
   rDia.forEach(reg => {
     let idx = registros.indexOf(reg);
-    let tempoStr = reg.tempoDesdeUltimo;
-    if (tempoStr !== "-" && parseInt(tempoStr, 10) === maxInterval) {
-      tempoStr = `<span style="color:red;">${tempoStr}</span>`;
+    let tempo = tempoPorReg.has(reg) ? tempoPorReg.get(reg) : "-";
+    let tempoStr = String(tempo);
+    if (tempo !== "-" && tempo === maxInterval) {
+      tempoStr = `<span style="color:red;">${tempo}</span>`;
     }
     let intervaloCell = (reg.timestamp === firstTimestamp && intervaloAnterior !== null)
                         ? convertMinToHM(intervaloAnterior)
@@ -444,14 +498,21 @@ function atualizarCalendario() {
   let rankingF = getRankingForFrequencia();
   let rankingI = getRankingForIntraInterval();
   let maiorTotalObj = computeMaiorIntervaloTotal();
+  let primeiroRegistrado = getPrimeiroDiaRegistrado();
   for (let d = 1; d <= ultimoDia.getDate(); d++){
     let cDate = new Date(ano, mes, d);
+    cDate.setHours(0, 0, 0, 0);
     let dateStr = formatDate(cDate);
     let r = resumoDiario[dateStr];
     let cellText = (r && r.numeroRegistros > 0)
       ? ` ${d}<br>T:${formatNumber(r.totalQuantidade, 1)} | R:${r.numeroRegistros} | I:${r.maiorIntervaloIntra}min`
       : d;
     let icons = "";
+    // Marca verde nos dias sem registro dentro do período de uso (meta atingida)
+    let ehDiaZeroElegivel = primeiroRegistrado && cDate >= primeiroRegistrado
+      && cDate <= hojeObj && (!r || r.numeroRegistros === 0);
+    if (ehDiaZeroElegivel)
+      icons += `<span style="font-size:20px;color:#2e7d32;" title="Dia sem registro — meta atingida">✓</span>`;
     if (rankingQ.length > 0 && rankingQ[0].date === dateStr)
       icons += `<span style="font-size:24px;" title="Troféu Dourado - Menor Quantidade">📉</span>`;
     if (rankingF.length > 0 && rankingF[0].date === dateStr)
@@ -614,9 +675,9 @@ function editarHora(index) {
   let reg = registros[index];
   let novaHora = prompt("Nova hora (HH:MM):", reg.hora);
   if (novaHora === null) return;
-  let partes = novaHora.split(":");
-  if (partes.length < 2) {
-    alert("Hora inválida.");
+  let hora = parseHoraValida(novaHora.trim());
+  if (!hora) {
+    alert("Hora inválida. Use HH:MM (00:00–23:59).");
     return;
   }
   let dObj = parseDateFromDDMMYYYY(reg.data);
@@ -624,7 +685,7 @@ function editarHora(index) {
     alert("Data inválida no registro.");
     return;
   }
-  dObj.setHours(parseInt(partes[0], 10), parseInt(partes[1], 10), 0, 0);
+  dObj.setHours(hora.h, hora.m, 0, 0);
   reg.timestamp = dObj.getTime();
   reg.hora = formatTime(dObj);
   updateSummaryForDay(reg.data);
@@ -645,20 +706,44 @@ function deletarDia(dateStr) {
 }
 
 // =======================
-// Exportação e Importação de CSV
+// Exportação e Importação (JSON completo / CSV)
 // =======================
-document.getElementById("exportarBtn").addEventListener("click", () => {
-  let csv = "data:text/csv;charset=utf-8,Data,Hora,Quantidade,TempoDesdeUltimo\n";
-  registros.forEach(reg => {
-    csv += `${reg.data},${reg.hora},${reg.quantidade},${reg.tempoDesdeUltimo}\n`;
-  });
-  let encodedUri = encodeURI(csv);
+
+// Baixa um arquivo usando Blob + URL.createObjectURL (sem limite de data URI).
+function baixarArquivo(nomeArquivo, conteudo, mime) {
+  let blob = new Blob([conteudo], { type: mime });
+  let url = URL.createObjectURL(blob);
   let link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "backup_registros.csv");
+  link.href = url;
+  link.download = nomeArquivo;
   document.body.appendChild(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Monta o backup completo: registros + resumoDiario (com as anotações).
+function montarBackupCompleto() {
+  return JSON.stringify({
+    versao: 1,
+    exportadoEm: new Date().toISOString(),
+    registros: registros,
+    resumoDiario: resumoDiario
+  }, null, 2);
+}
+
+// Exportar JSON (backup completo, inclui anotações)
+document.getElementById("exportarJsonBtn").addEventListener("click", () => {
+  baixarArquivo("backup_registros.json", montarBackupCompleto(), "application/json");
+});
+
+// Exportar CSV (com escape RFC 4180)
+document.getElementById("exportarBtn").addEventListener("click", () => {
+  let linhas = ["Data,Hora,Quantidade"];
+  registros.forEach(reg => {
+    linhas.push([reg.data, reg.hora, reg.quantidade].map(escaparCSV).join(","));
+  });
+  baixarArquivo("backup_registros.csv", linhas.join("\n"), "text/csv;charset=utf-8");
 });
 
 document.getElementById("importarBtn").addEventListener("click", () => {
@@ -670,42 +755,108 @@ document.getElementById("fileInput").addEventListener("change", function(e) {
   if (!f) return;
   let reader = new FileReader();
   reader.onload = function(ev) {
-    importCSV(ev.target.result);
+    importarArquivo(ev.target.result, f.name);
+    document.getElementById("fileInput").value = "";
   };
   reader.readAsText(f);
 });
 
-function importCSV(content) {
-  let lines = content.split("\n");
+// Importação: aceita JSON (backup completo) ou CSV. Substitui a base atual,
+// mas antes confirma e baixa um backup automático de segurança.
+function importarArquivo(content, nomeArquivo) {
+  if (!confirm("Importar vai SUBSTITUIR toda a base atual (registros e anotações).\n\nUm backup automático do estado atual será baixado antes. Deseja continuar?")) {
+    return;
+  }
+  // Rede de segurança: backup completo do estado atual antes de substituir
+  baixarArquivo("backup_antes_de_importar.json", montarBackupCompleto(), "application/json");
+
+  let ehJson = /\.json$/i.test(nomeArquivo) || content.trim().startsWith("{");
+  if (ehJson) {
+    importarJSON(content);
+  } else {
+    importarCSV(content);
+  }
+}
+
+function importarJSON(content) {
+  let dados;
+  try {
+    dados = JSON.parse(content);
+  } catch (err) {
+    alert("Arquivo JSON inválido.");
+    return;
+  }
+  let novos = Array.isArray(dados.registros) ? dados.registros : [];
+  registros = novos.map(r => {
+    let ts = parseInt(r.timestamp, 10);
+    if (isNaN(ts)) ts = Date.now();
+    let dObj = new Date(ts);
+    return {
+      data: formatDate(dObj),
+      hora: formatTime(dObj),
+      quantidade: parseFloat(r.quantidade) || 0,
+      timestamp: ts
+    };
+  });
+  resumoDiario = (dados.resumoDiario && typeof dados.resumoDiario === "object") ? dados.resumoDiario : {};
+  finalizarImportacao();
+}
+
+// Parser CSV mínimo que respeita campos entre aspas (vírgulas e aspas escapadas).
+function parseLinhaCSV(line) {
+  let campos = [];
+  let atual = "";
+  let dentroAspas = false;
+  for (let i = 0; i < line.length; i++) {
+    let c = line[i];
+    if (dentroAspas) {
+      if (c === '"') {
+        if (line[i + 1] === '"') { atual += '"'; i++; }
+        else dentroAspas = false;
+      } else {
+        atual += c;
+      }
+    } else {
+      if (c === '"') dentroAspas = true;
+      else if (c === ",") { campos.push(atual); atual = ""; }
+      else atual += c;
+    }
+  }
+  campos.push(atual);
+  return campos;
+}
+
+function importarCSV(content) {
+  let lines = content.split(/\r?\n/);
   lines.shift(); // Remove o cabeçalho
   let imported = [];
   lines.forEach(line => {
     line = line.trim();
     if (!line) return;
-    let parts = line.split(",");
+    let parts = parseLinhaCSV(line);
     if (parts.length < 3) return;
     let dtStr = parts[0].trim();
     let horaStr = parts[1].trim();
-    let qStr = parts[2].trim();
-    let q = parseFloat(qStr);
+    let q = parseFloat(parts[2].trim());
     let dtParts = dtStr.split("/");
     if (dtParts.length !== 3) return;
     let [d, m, y] = dtParts.map(x => parseInt(x, 10));
-    let horaParts = horaStr.split(":");
-    if (horaParts.length < 2) return;
-    let [hh, mm] = horaParts.map(x => parseInt(x, 10));
-    let dt = new Date(y, m - 1, d, hh, mm, 0);
-    let ts = dt.getTime();
+    let hora = parseHoraValida(horaStr);
+    if (!hora) return;
+    let dt = new Date(y, m - 1, d, hora.h, hora.m, 0);
     imported.push({
       data: formatDate(dt),
       hora: formatTime(dt),
-      quantidade: q,
-      timestamp: ts,
-      tempoDesdeUltimo: "-"
+      quantidade: isNaN(q) ? 0 : q,
+      timestamp: dt.getTime()
     });
   });
   registros = imported;
-  resumoDiario = {};
+  resumoDiario = {}; // CSV não carrega anotações; a base recomeça
+  finalizarImportacao();
+}
+
+function finalizarImportacao() {
   let uniqueDates = new Set();
   registros.forEach(r => uniqueDates.add(r.data));
   uniqueDates.forEach(d => updateSummaryForDay(d));
@@ -715,18 +866,80 @@ function importCSV(content) {
   atualizarCalendario();
   atualizarSelectedDateDisplay();
   salvarDados();
-  document.getElementById("fileInput").value = "";
 }
 
 // =======================
 // Armazenamento com chrome.storage.local
 // =======================
+// Guarda a última string escrita por esta página, para distinguir a própria
+// gravação de uma gravação vinda de outra origem (ex.: o popup) no onChanged.
+let ultimoRegistrosJSON = null;
+let ultimoResumoJSON = null;
+
 function salvarDados() {
+  ultimoRegistrosJSON = JSON.stringify(registros);
+  ultimoResumoJSON = JSON.stringify(resumoDiario);
   chrome.storage.local.set({
-    registros: JSON.stringify(registros),
-    resumoDiario: JSON.stringify(resumoDiario)
+    registros: ultimoRegistrosJSON,
+    resumoDiario: ultimoResumoJSON
   });
 }
+
+// Sincroniza a página quando o storage muda por outra origem (o popup grava
+// direto e não conhece o estado em memória desta página). Sem isto, o registro
+// feito pelo popup só apareceria após recarregar a página.
+chrome.storage.onChanged.addListener(function(changes, areaName) {
+  if (areaName !== "local") return;
+  let regMudou = changes.registros && changes.registros.newValue !== ultimoRegistrosJSON;
+  let resMudou = changes.resumoDiario && changes.resumoDiario.newValue !== ultimoResumoJSON;
+  if (!regMudou && !resMudou) return; // ignora a própria gravação desta página
+
+  if (regMudou) {
+    let novos = changes.registros.newValue;
+    registros = novos ? JSON.parse(novos) : [];
+    registros.forEach(r => {
+      let ts = parseInt(r.timestamp, 10);
+      if (isNaN(ts)) ts = Date.now();
+      r.data = formatDate(new Date(ts));
+      r.timestamp = ts;
+    });
+  }
+  if (resMudou) {
+    let nv = changes.resumoDiario.newValue;
+    resumoDiario = nv ? JSON.parse(nv) : {};
+  }
+  // Recalcula o resumo dos dias afetados (preservando notas) e re-renderiza
+  let dias = new Set(Object.keys(resumoDiario));
+  registros.forEach(r => dias.add(r.data));
+  dias.forEach(d => updateSummaryForDay(d));
+  ultimoRegistro = registros.length > 0 ? registros[registros.length - 1] : null;
+  atualizarTabelas();
+  atualizarResumoTable();
+  atualizarCalendario();
+  // Persiste o resumo recalculado (o popup só grava "registros")
+  salvarDados();
+});
+
+// =======================
+// Salvar anotações do dia selecionado
+// =======================
+document.getElementById("salvarNotasBtn").addEventListener("click", function() {
+  let texto = document.getElementById("dailyNotes").value;
+  // Cria a entrada do dia se ainda não existir (dia sem registros, só com nota)
+  if (!resumoDiario[selectedDate]) {
+    resumoDiario[selectedDate] = {
+      notes: "",
+      totalQuantidade: 0,
+      numeroRegistros: 0,
+      maiorIntervaloIntra: 0
+    };
+  }
+  resumoDiario[selectedDate].notes = texto;
+  salvarDados();
+  let fb = document.getElementById("saveFeedback");
+  fb.style.display = "block";
+  setTimeout(() => { fb.style.display = "none"; }, 2000);
+});
 
 function carregarDados() {
   chrome.storage.local.get(["registros", "resumoDiario"], function(result) {
@@ -755,6 +968,9 @@ function carregarDados() {
 
 // Inicia o carregamento dos dados
 carregarDados();
+
+// Foca o campo de quantidade ao abrir a página
+document.getElementById("quantidade").focus();
 
 // =======================
 // Event delegation para botões de edição e deleção (gerados dinamicamente)
