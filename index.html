@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro de Atividade</title>
-  <!-- Carrega o CSS do Flatpickr localmente -->
-  <link rel="stylesheet" href="flatpickr.min.css">
   <style>
     /* ===================== Tema (claro/escuro) ===================== */
     :root {
@@ -242,6 +240,80 @@
     .delete-btn:hover, .edit-btn:hover, .action-btn:hover {
       color: var(--text); background: var(--surface-3);
     }
+    .acoes-cell { white-space: nowrap; }
+    /* Coluna "Ações" sempre visível, mesmo com rolagem horizontal da tabela */
+    .table-scroll table th:last-child,
+    .table-scroll table td:last-child {
+      position: sticky;
+      right: 0;
+      background: var(--surface);
+      box-shadow: -7px 0 8px -7px rgba(15, 23, 42, .18);
+    }
+    .table-scroll table thead th:last-child { background: var(--surface-3); }
+    .table-scroll table tbody tr:hover td:last-child { background: var(--surface-2); }
+
+    /* ===================== Atalhos de valor (chips) ===================== */
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .chip {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      box-shadow: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .chip:hover { background: var(--surface-3); }
+    .chip.chip-default {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+    }
+
+    /* ===================== Campo de hora (HH : MM) ===================== */
+    .time-field { display: flex; align-items: center; gap: 6px; }
+    .time-field select {
+      padding: 11px 10px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .time-field select:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .time-sep { color: var(--text-muted); font-weight: 700; }
+
+    /* ===================== Modal de edição ===================== */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(15, 23, 42, .55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      padding: 22px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .modal label {
+      display: block;
+      font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+      margin: 16px 0 6px;
+    }
+    .modal input[type="text"] { width: 100%; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
     /* ===================== Calendário ===================== */
     #mesAtual { margin-bottom: 14px; }
@@ -467,12 +539,18 @@
           <input type="text" id="quantidade" step="0.1" placeholder="Digite a quantidade">
         </div>
         <div class="field">
-          <label for="horaInput">Hora</label>
-          <input type="text" id="horaInput" placeholder="hh:mm">
+          <label for="horaHH">Hora (24h)</label>
+          <div class="time-field">
+            <select id="horaHH" aria-label="Hora"></select>
+            <span class="time-sep">:</span>
+            <select id="horaMM" aria-label="Minuto"></select>
+          </div>
         </div>
         <button id="registrarBtn" class="btn-primary" title="Registrar novo evento">Registrar</button>
         <span id="statusMessage"></span>
       </div>
+      <!-- Atalhos de valor (1 é o padrão; demais são os últimos valores usados) -->
+      <div class="chips" id="quantChips"></div>
     </div>
 
     <!-- Área principal -->
@@ -569,8 +647,26 @@
     </div>
   </div>
 
-  <!-- Carrega o Flatpickr e os scripts locais -->
-  <script src="flatpickr.min.js"></script>
+  <!-- Modal de edição de registro -->
+  <div id="editModal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <h3>Editar registro <span class="card-title-muted" id="editDataDisplay"></span></h3>
+      <label for="editQuantidade">Quantidade</label>
+      <input type="text" id="editQuantidade" placeholder="Quantidade">
+      <div class="chips" id="editChips"></div>
+      <label for="editHH">Hora (24h)</label>
+      <div class="time-field">
+        <select id="editHH" aria-label="Hora"></select>
+        <span class="time-sep">:</span>
+        <select id="editMM" aria-label="Minuto"></select>
+      </div>
+      <div class="modal-actions">
+        <button id="editCancelBtn" class="btn-ghost" type="button">Cancelar</button>
+        <button id="editSaveBtn" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

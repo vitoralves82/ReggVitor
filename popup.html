@@ -7,7 +7,9 @@
     :root {
       --bg: #ffffff;
       --surface-2: #f8fafc;
+      --surface-3: #f1f5f9;
       --border: #cbd5e1;
+      --border-strong: #cbd5e1;
       --text: #1e293b;
       --text-muted: #64748b;
       --accent: #059669;
@@ -17,11 +19,14 @@
       --secondary-strong: #1d4ed8;
       --danger: #dc2626;
     }
+    /* Tema automático (segue o sistema) quando o usuário não forçou um tema */
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
         --bg: #131c2e;
         --surface-2: #0f1726;
+        --surface-3: #1b2740;
         --border: #35435e;
+        --border-strong: #35435e;
         --text: #e6edf6;
         --text-muted: #93a1b5;
         --accent: #10b981;
@@ -31,6 +36,22 @@
         --secondary-strong: #60a5fa;
         --danger: #f87171;
       }
+    }
+    /* Tema forçado pelo usuário (salvo na página completa) */
+    :root[data-theme="dark"] {
+      --bg: #131c2e;
+      --surface-2: #0f1726;
+      --surface-3: #1b2740;
+      --border: #35435e;
+      --border-strong: #35435e;
+      --text: #e6edf6;
+      --text-muted: #93a1b5;
+      --accent: #10b981;
+      --accent-strong: #34d399;
+      --accent-soft: #0c2a20;
+      --secondary: #3b82f6;
+      --secondary-strong: #60a5fa;
+      --danger: #f87171;
     }
     * { box-sizing: border-box; }
     body {
@@ -65,7 +86,7 @@
       font-size: 15px;
       color: var(--text);
       background: var(--surface-2);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-strong);
       border-radius: 9px;
       box-sizing: border-box;
       transition: border-color .15s, box-shadow .15s;
@@ -74,6 +95,39 @@
     input[type="text"]:focus {
       outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
     }
+    /* Atalhos de valor (chips) */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .chip {
+      width: auto;
+      margin: 0;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip:hover { background: var(--surface-3); }
+    .chip.chip-default { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+    /* Campo de hora (HH : MM) */
+    .time-field { display: flex; align-items: center; gap: 6px; }
+    .time-field select {
+      flex: 1;
+      padding: 10px 8px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .time-field select:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .time-sep { color: var(--text-muted); font-weight: 700; }
     button {
       width: 100%;
       padding: 10px;
@@ -117,8 +171,14 @@
   <label for="popupQuantidade">Quantidade</label>
   <!-- autofocus: foca a quantidade ao abrir o popup -->
   <input type="text" id="popupQuantidade" placeholder="Digite a quantidade" autofocus>
-  <label for="popupHora">Hora (HH:MM)</label>
-  <input type="text" id="popupHora" placeholder="hh:mm">
+  <!-- Atalhos de valor (1 é o padrão; demais são os últimos valores usados) -->
+  <div class="chips" id="popupChips"></div>
+  <label for="popupHH">Hora (24h)</label>
+  <div class="time-field">
+    <select id="popupHH" aria-label="Hora"></select>
+    <span class="time-sep">:</span>
+    <select id="popupMM" aria-label="Minuto"></select>
+  </div>
   <button class="register-btn" id="popupRegistrarBtn">Registrar</button>
   <button class="goto-btn" id="popupGotoBtn">Ir para a página de registros</button>
   <div id="popupStatus"></div>

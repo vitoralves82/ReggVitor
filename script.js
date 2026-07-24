@@ -4,14 +4,69 @@
 const EPS = 0.001;
 
 // =======================
-// Configuração do Flatpickr
+// Helpers de hora (selects de HH e MM, 24h) e de chips de quantidade
 // =======================
-flatpickr("#horaInput", {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "H:i",
-  time_24hr: true
-});
+
+// Popula um par de <select> com horas (00–23) e minutos (00–59).
+function popularSelectsHora(hhSel, mmSel) {
+  if (hhSel && hhSel.options.length === 0) {
+    for (let h = 0; h < 24; h++) {
+      let o = document.createElement("option");
+      o.value = h;
+      o.textContent = String(h).padStart(2, "0");
+      hhSel.appendChild(o);
+    }
+  }
+  if (mmSel && mmSel.options.length === 0) {
+    for (let m = 0; m < 60; m++) {
+      let o = document.createElement("option");
+      o.value = m;
+      o.textContent = String(m).padStart(2, "0");
+      mmSel.appendChild(o);
+    }
+  }
+}
+
+// Ajusta os selects para a hora/minuto de uma data.
+function setSelectsHora(hhSel, mmSel, date) {
+  if (hhSel) hhSel.value = date.getHours();
+  if (mmSel) mmSel.value = date.getMinutes();
+}
+
+// Formata um número de quantidade para rótulo curto (inteiro sem casas, senão vírgula).
+function formatChip(v) {
+  let r = Math.round(v * 10) / 10;
+  return Number.isInteger(r) ? String(r) : String(r).replace(".", ",");
+}
+
+// Valores recentes para os botões de atalho: 1 é sempre o primeiro (padrão),
+// seguido pelos valores distintos mais recentemente registrados.
+function getValoresRecentes(max) {
+  let limite = max || 6;
+  let vals = [1];
+  for (let i = registros.length - 1; i >= 0 && vals.length < limite; i--) {
+    let q = registros[i].quantidade;
+    if (!vals.some(v => Math.abs(v - q) < EPS)) vals.push(q);
+  }
+  return vals;
+}
+
+// Renderiza os chips de valor num container, preenchendo o input ao clicar.
+function renderChips(container, inputEl) {
+  if (!container) return;
+  container.innerHTML = "";
+  getValoresRecentes(6).forEach((v, idx) => {
+    let b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (idx === 0 ? " chip-default" : "");
+    b.textContent = formatChip(v);
+    b.addEventListener("click", () => {
+      inputEl.value = formatChip(v);
+      inputEl.focus();
+    });
+    container.appendChild(b);
+  });
+}
 
 // =======================
 // Funções utilitárias de formatação
@@ -264,7 +319,8 @@ function getIntervalFromPreviousDay(dateStr) {
 // =======================
 function registrarEvento() {
   let quantidadeInput = document.getElementById("quantidade");
-  let horaInput = document.getElementById("horaInput");
+  let hhSel = document.getElementById("horaHH");
+  let mmSel = document.getElementById("horaMM");
   let statusMessage = document.getElementById("statusMessage");
 
   // Remove espaços e substitui vírgula por ponto
@@ -276,22 +332,15 @@ function registrarEvento() {
   } else {
     statusMessage.textContent = "";
   }
-  
+
   let baseDate = parseDateFromDDMMYYYY(selectedDate);
   if (!baseDate) baseDate = new Date();
-  
-  let horaVal = horaInput.value.trim();
-  if (!horaVal) {
-    let now = new Date();
-    baseDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
-  } else {
-    let hora = parseHoraValida(horaVal);
-    if (!hora) {
-      statusMessage.textContent = "Hora inválida! Use HH:MM (00:00–23:59).";
-      return;
-    }
-    baseDate.setHours(hora.h, hora.m, 0, 0);
-  }
+
+  // Hora vem dos selects (sempre válida, 00–23 / 00–59)
+  let hh = parseInt(hhSel.value, 10);
+  let mm = parseInt(mmSel.value, 10);
+  baseDate.setHours(hh, mm, 0, 0);
+
   let ts = baseDate.getTime();
   let reg = {
     data: formatDate(baseDate),
@@ -303,11 +352,13 @@ function registrarEvento() {
   updateSummaryForDay(reg.data);
   ultimoRegistro = reg;
   quantidadeInput.value = "";
-  horaInput.value = "";
   atualizarTabelas();
   atualizarResumoTable();
   atualizarCalendario();
   salvarDados();
+  // Reseta a hora para "agora" e atualiza os atalhos de valor
+  setSelectsHora(hhSel, mmSel, new Date());
+  renderChips(document.getElementById("quantChips"), quantidadeInput);
   statusMessage.textContent = "Salvo - " + formatTime(baseDate);
   setTimeout(() => { statusMessage.textContent = ""; }, 2000);
   // Volta o foco para a quantidade após registrar
@@ -317,10 +368,18 @@ function registrarEvento() {
 document.getElementById("quantidade").addEventListener("keyup", function(e) {
   if (e.key === "Enter") registrarEvento();
 });
-document.getElementById("horaInput").addEventListener("keyup", function(e) {
-  if (e.key === "Enter") registrarEvento();
-});
 document.getElementById("registrarBtn").addEventListener("click", registrarEvento);
+
+// Inicializa os selects de hora (padrão = agora) e os chips de valor do formulário.
+function initFormulario() {
+  let hhSel = document.getElementById("horaHH");
+  let mmSel = document.getElementById("horaMM");
+  popularSelectsHora(hhSel, mmSel);
+  setSelectsHora(hhSel, mmSel, new Date());
+  // Enter no minuto também registra
+  if (mmSel) mmSel.addEventListener("keyup", function(e) { if (e.key === "Enter") registrarEvento(); });
+  renderChips(document.getElementById("quantChips"), document.getElementById("quantidade"));
+}
 
 // =======================
 // Atualiza a Tabela de Registros Diários
@@ -383,16 +442,13 @@ function atualizarTabelas() {
       <tr>
         <td>${reg.data}</td>
         <td>${weekDay}</td>
-        <td>
-          ${reg.hora} <button class="edit-btn" data-index="${idx}" data-type="hora">🕒</button>
-        </td>
-        <td>
-          ${formatNumber(reg.quantidade, 1)} ${reg.timestamp === firstTimestamp ? premioQuantidade : ""} <button class="edit-btn" data-index="${idx}" data-type="quantidade">🔢</button>
-        </td>
+        <td>${reg.hora}</td>
+        <td>${formatNumber(reg.quantidade, 1)} ${reg.timestamp === firstTimestamp ? premioQuantidade : ""}</td>
         <td>${tempoStr} ${reg.timestamp === firstTimestamp ? premioFrequencia : ""}</td>
         <td>${intervaloCell} ${reg.timestamp === firstTimestamp ? premioIntra : ""}</td>
-        <td>
-          <button class="delete-btn" data-index="${idx}" title="Excluir Registro">🗑️</button>
+        <td class="acoes-cell">
+          <button class="edit-btn" data-index="${idx}" title="Editar registro">✏️</button>
+          <button class="delete-btn" data-index="${idx}" title="Excluir registro">🗑️</button>
         </td>
       </tr>
     `;
@@ -402,6 +458,8 @@ function atualizarTabelas() {
   }
   atualizarSelectedDateDisplay();
   carregarNotas(selectedDate);
+  // Mantém os atalhos de valor atualizados conforme os registros
+  renderChips(document.getElementById("quantChips"), document.getElementById("quantidade"));
 }
 
 // =======================
@@ -673,39 +731,46 @@ function deletarRegistro(index) {
   salvarDados();
 }
 
-function editarQuantidade(index) {
+// Índice do registro em edição (null = modal fechado)
+let editIndex = null;
+
+// Abre o modal de edição preenchido com os dados do registro.
+function abrirEdicao(index) {
+  editIndex = index;
   let reg = registros[index];
-  let novaQStr = prompt("Nova quantidade:", reg.quantidade);
-  if (novaQStr === null) return;
-  novaQStr = novaQStr.replace(",", ".").trim();
-  let novaQ = parseFloat(novaQStr);
-  if (isNaN(novaQ)) {
+  let qInput = document.getElementById("editQuantidade");
+  let hhSel = document.getElementById("editHH");
+  let mmSel = document.getElementById("editMM");
+  qInput.value = formatChip(reg.quantidade);
+  popularSelectsHora(hhSel, mmSel);
+  setSelectsHora(hhSel, mmSel, new Date(reg.timestamp));
+  renderChips(document.getElementById("editChips"), qInput);
+  document.getElementById("editDataDisplay").textContent = reg.data;
+  document.getElementById("editModal").style.display = "flex";
+  qInput.focus();
+  qInput.select();
+}
+
+function fecharEdicao() {
+  document.getElementById("editModal").style.display = "none";
+  editIndex = null;
+}
+
+// Salva a edição (quantidade + hora), mantendo a data do registro.
+function salvarEdicao() {
+  if (editIndex === null) return;
+  let reg = registros[editIndex];
+  let qStr = document.getElementById("editQuantidade").value.replace(",", ".").trim();
+  let q = parseFloat(qStr);
+  if (isNaN(q)) {
     alert("Quantidade inválida.");
     return;
   }
-  reg.quantidade = novaQ;
-  updateSummaryForDay(reg.data);
-  atualizarTabelas();
-  atualizarResumoTable();
-  atualizarCalendario();
-  salvarDados();
-}
-
-function editarHora(index) {
-  let reg = registros[index];
-  let novaHora = prompt("Nova hora (HH:MM):", reg.hora);
-  if (novaHora === null) return;
-  let hora = parseHoraValida(novaHora.trim());
-  if (!hora) {
-    alert("Hora inválida. Use HH:MM (00:00–23:59).");
-    return;
-  }
-  let dObj = parseDateFromDDMMYYYY(reg.data);
-  if (!dObj) {
-    alert("Data inválida no registro.");
-    return;
-  }
-  dObj.setHours(hora.h, hora.m, 0, 0);
+  let hh = parseInt(document.getElementById("editHH").value, 10);
+  let mm = parseInt(document.getElementById("editMM").value, 10);
+  let dObj = parseDateFromDDMMYYYY(reg.data) || new Date(reg.timestamp);
+  dObj.setHours(hh, mm, 0, 0);
+  reg.quantidade = q;
   reg.timestamp = dObj.getTime();
   reg.hora = formatTime(dObj);
   updateSummaryForDay(reg.data);
@@ -713,6 +778,25 @@ function editarHora(index) {
   atualizarResumoTable();
   atualizarCalendario();
   salvarDados();
+  fecharEdicao();
+}
+
+// Liga os controles do modal de edição.
+function initModalEdicao() {
+  let saveBtn = document.getElementById("editSaveBtn");
+  let cancelBtn = document.getElementById("editCancelBtn");
+  let overlay = document.getElementById("editModal");
+  if (saveBtn) saveBtn.addEventListener("click", salvarEdicao);
+  if (cancelBtn) cancelBtn.addEventListener("click", fecharEdicao);
+  // Clicar fora do card fecha; Esc fecha; Enter na quantidade salva
+  if (overlay) overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) fecharEdicao();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && editIndex !== null) fecharEdicao();
+  });
+  let qInput = document.getElementById("editQuantidade");
+  if (qInput) qInput.addEventListener("keyup", function(e) { if (e.key === "Enter") salvarEdicao(); });
 }
 
 function deletarDia(dateStr) {
@@ -1121,9 +1205,11 @@ function initGrafico() {
   });
 }
 
-// Inicializa tema e gráfico
+// Inicializa tema, gráfico, formulário e modal de edição
 initTema();
 initGrafico();
+initFormulario();
+initModalEdicao();
 
 // Inicia o carregamento dos dados
 carregarDados();
@@ -1140,11 +1226,6 @@ document.addEventListener("click", function(e) {
     deletarRegistro(parseInt(idx, 10));
   } else if (e.target.classList.contains("edit-btn")) {
     let idx = e.target.getAttribute("data-index");
-    let type = e.target.getAttribute("data-type");
-    if (type === "quantidade") {
-      editarQuantidade(parseInt(idx, 10));
-    } else if (type === "hora") {
-      editarHora(parseInt(idx, 10));
-    }
+    abrirEdicao(parseInt(idx, 10));
   }
 });
