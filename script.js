@@ -52,12 +52,15 @@ function getValoresRecentes(max) {
 }
 
 // Renderiza os chips de valor num container, preenchendo o input ao clicar.
+// tabindex="-1": os chips são um atalho de clique, não devem interromper o
+// fluxo de Tab entre quantidade e hora.
 function renderChips(container, inputEl) {
   if (!container) return;
   container.innerHTML = "";
   getValoresRecentes(6).forEach((v, idx) => {
     let b = document.createElement("button");
     b.type = "button";
+    b.tabIndex = -1;
     b.className = "chip" + (idx === 0 ? " chip-default" : "");
     b.textContent = formatChip(v);
     b.addEventListener("click", () => {
@@ -95,6 +98,26 @@ function parseDateFromDDMMYYYY(str) {
   let m = parseInt(parts[1], 10) - 1;
   let y = parseInt(parts[2], 10);
   return new Date(y, m, d);
+}
+
+// Formata uma data para o formato ISO (AAAA-MM-DD) exigido por <input type="date">,
+// usando os componentes locais (evita o desvio de dia do toISOString, que usa UTC).
+function formatDateISO(date) {
+  let y = date.getFullYear();
+  let m = String(date.getMonth() + 1).padStart(2, "0");
+  let d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// Converte o valor ISO (AAAA-MM-DD) de <input type="date"> para {y, m, d}.
+// Retorna null se o valor estiver vazio ou malformado.
+function parseISODate(str) {
+  if (!str) return null;
+  let parts = str.split("-");
+  if (parts.length !== 3) return null;
+  let [y, m, d] = parts.map(x => parseInt(x, 10));
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return { y, m, d };
 }
 
 // Valida uma string de hora "HH:MM" na faixa 00:00–23:59.
@@ -378,6 +401,9 @@ function initFormulario() {
   setSelectsHora(hhSel, mmSel, new Date());
   // Enter no minuto também registra
   if (mmSel) mmSel.addEventListener("keyup", function(e) { if (e.key === "Enter") registrarEvento(); });
+  // Botão "Agora": reajusta a hora para o momento atual com um clique
+  let agoraBtn = document.getElementById("horaAgoraBtn");
+  if (agoraBtn) agoraBtn.addEventListener("click", () => setSelectsHora(hhSel, mmSel, new Date()));
   renderChips(document.getElementById("quantChips"), document.getElementById("quantidade"));
 }
 
@@ -690,15 +716,16 @@ function updateTodayHighlight() {
   let recQ = rankingQ.length > 0 ? formatNumber(rankingQ[0].value, 1) : "-";
   let recF = rankingF.length > 0 ? rankingF[0].value : "-";
   let recI = rankingI.length > 0 ? convertMinToHM(rankingI[0].value) : "-";
-  let content = `Hoje (${hoje}):`;
+  // Faixa compacta de estatísticas (uma linha, com quebra automática em telas estreitas)
+  let content = `<span class="stat-day">Hoje (${hoje})</span>`;
   if (!info || info.numeroRegistros === 0) {
-    content += " Sem registros hoje.";
+    content += `<span class="stat">Sem registros hoje.</span>`;
   } else {
-    content += `<br>- Registros: ${info.numeroRegistros} (record: ${recF})`;
-    content += `<br>- Quantidade Total: ${formatNumber(info.totalQuantidade, 1)} (record: ${recQ})`;
-    content += `<br>- Maior Intervalo Intra: ${convertMinToHM(info.maiorIntervaloIntra)} (record: ${recI})`;
+    content += `<span class="stat">📋 ${info.numeroRegistros} <span class="stat-record">(recorde ${recF})</span></span>`;
+    content += `<span class="stat">Σ ${formatNumber(info.totalQuantidade, 1)} <span class="stat-record">(recorde ${recQ})</span></span>`;
+    content += `<span class="stat">⏱ ${convertMinToHM(info.maiorIntervaloIntra)} <span class="stat-record">(recorde ${recI})</span></span>`;
     if (intervaloStr) {
-      content += `<br>- Intervalo do dia anterior: ${intervaloStr}`;
+      content += `<span class="stat">↦ ${intervaloStr}</span>`;
     }
   }
   document.getElementById("todayHighlight").innerHTML = content;
@@ -731,21 +758,26 @@ function deletarRegistro(index) {
   salvarDados();
 }
 
-// Índice do registro em edição (null = modal fechado)
+// Índice do registro em edição (null = modal fechado) e o dia original
+// (para recalcular o resumo do dia de onde o registro saiu, se a data mudar).
 let editIndex = null;
+let editDiaOriginal = null;
 
-// Abre o modal de edição preenchido com os dados do registro.
+// Abre o modal de edição preenchido com os dados do registro (inclui a data).
 function abrirEdicao(index) {
   editIndex = index;
   let reg = registros[index];
+  editDiaOriginal = reg.data;
   let qInput = document.getElementById("editQuantidade");
   let hhSel = document.getElementById("editHH");
   let mmSel = document.getElementById("editMM");
+  let dInput = document.getElementById("editData");
   qInput.value = formatChip(reg.quantidade);
   popularSelectsHora(hhSel, mmSel);
-  setSelectsHora(hhSel, mmSel, new Date(reg.timestamp));
+  let dt = new Date(reg.timestamp);
+  setSelectsHora(hhSel, mmSel, dt);
+  dInput.value = formatDateISO(dt);
   renderChips(document.getElementById("editChips"), qInput);
-  document.getElementById("editDataDisplay").textContent = reg.data;
   document.getElementById("editModal").style.display = "flex";
   qInput.focus();
   qInput.select();
@@ -754,9 +786,11 @@ function abrirEdicao(index) {
 function fecharEdicao() {
   document.getElementById("editModal").style.display = "none";
   editIndex = null;
+  editDiaOriginal = null;
 }
 
-// Salva a edição (quantidade + hora), mantendo a data do registro.
+// Salva a edição (data + quantidade + hora). Se a data mudar, o registro
+// migra de dia e o resumo de ambos os dias (antigo e novo) é recalculado.
 function salvarEdicao() {
   if (editIndex === null) return;
   let reg = registros[editIndex];
@@ -766,14 +800,24 @@ function salvarEdicao() {
     alert("Quantidade inválida.");
     return;
   }
+  let iso = parseISODate(document.getElementById("editData").value);
+  if (!iso) {
+    alert("Data inválida.");
+    return;
+  }
   let hh = parseInt(document.getElementById("editHH").value, 10);
   let mm = parseInt(document.getElementById("editMM").value, 10);
-  let dObj = parseDateFromDDMMYYYY(reg.data) || new Date(reg.timestamp);
-  dObj.setHours(hh, mm, 0, 0);
+  let dObj = new Date(iso.y, iso.m - 1, iso.d, hh, mm, 0, 0);
+  let diaAntigo = editDiaOriginal;
   reg.quantidade = q;
   reg.timestamp = dObj.getTime();
+  reg.data = formatDate(dObj);
   reg.hora = formatTime(dObj);
-  updateSummaryForDay(reg.data);
+  updateSummaryForDay(diaAntigo);
+  if (reg.data !== diaAntigo) updateSummaryForDay(reg.data);
+  ultimoRegistro = registros.length > 0 ? registros[registros.length - 1] : null;
+  // Acompanha o registro editado até o dia (novo ou mesmo) para confirmar visualmente a mudança
+  selectedDate = reg.data;
   atualizarTabelas();
   atualizarResumoTable();
   atualizarCalendario();

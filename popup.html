@@ -128,6 +128,18 @@
       outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
     }
     .time-sep { color: var(--text-muted); font-weight: 700; }
+    .btn-agora {
+      flex: none;
+      width: auto;
+      margin: 0;
+      padding: 9px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-agora:hover { background: var(--surface-3); color: var(--text); }
     button {
       width: 100%;
       padding: 10px;
@@ -178,6 +190,7 @@
     <select id="popupHH" aria-label="Hora"></select>
     <span class="time-sep">:</span>
     <select id="popupMM" aria-label="Minuto"></select>
+    <button type="button" id="popupAgoraBtn" class="btn-agora" tabindex="-1" title="Definir hora para agora">Agora</button>
   </div>
   <button class="register-btn" id="popupRegistrarBtn">Registrar</button>
   <button class="goto-btn" id="popupGotoBtn">Ir para a página de registros</button>

@@ -76,6 +76,7 @@ function renderChips(registros) {
   vals.forEach((v, idx) => {
     let b = document.createElement("button");
     b.type = "button";
+    b.tabIndex = -1; // atalho de clique; não interrompe o Tab até a hora
     b.className = "chip" + (idx === 0 ? " chip-default" : "");
     b.textContent = formatChip(v);
     b.addEventListener("click", () => { inputEl.value = formatChip(v); inputEl.focus(); });
@@ -151,6 +152,9 @@ document.getElementById("popupMM").addEventListener("keyup", function(e){
   if (e.key === "Enter") registrarPopup();
 });
 document.getElementById("popupGotoBtn").addEventListener("click", abrirPaginaRegistros);
+document.getElementById("popupAgoraBtn").addEventListener("click", () => {
+  setSelectsHora(document.getElementById("popupHH"), document.getElementById("popupMM"), new Date());
+});
 
 // Ao abrir o popup: aplica tema, popula a hora (agora), foca e mostra o resumo
 aplicarTemaSalvo();
