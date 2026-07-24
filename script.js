@@ -560,6 +560,7 @@ function atualizarCalendario() {
   }
   updateChampionDisplay();
   updateTodayHighlight();
+  atualizarGrafico();
 }
 
 // =======================
@@ -984,6 +985,145 @@ function carregarDados() {
     atualizarSelectedDateDisplay();
   });
 }
+
+// =======================
+// Tema (claro / escuro / automático), salvo em chrome.storage.local
+// =======================
+function aplicarTema(escolha) {
+  const root = document.documentElement;
+  if (escolha === "light" || escolha === "dark") {
+    root.setAttribute("data-theme", escolha);
+  } else {
+    root.removeAttribute("data-theme"); // "auto" = segue o sistema
+  }
+  document.querySelectorAll("#themeToggle button").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-theme-choice") === (escolha || "auto"));
+  });
+}
+
+function initTema() {
+  // Padrão: claro (preferência do usuário); pode ser trocado e fica salvo.
+  chrome.storage.local.get(["tema"], function(result) {
+    aplicarTema(result.tema || "light");
+  });
+  document.querySelectorAll("#themeToggle button").forEach(b => {
+    b.addEventListener("click", function() {
+      let escolha = this.getAttribute("data-theme-choice");
+      aplicarTema(escolha);
+      chrome.storage.local.set({ tema: escolha });
+    });
+  });
+}
+
+// =======================
+// Gráfico de evolução (SVG puro, sem biblioteca externa)
+// =======================
+let metricaGrafico = "quantidade"; // "quantidade" | "frequencia"
+
+// Série do mês corrente: do 1º registro geral até hoje; dias sem registro = 0.
+function getSerieMensal() {
+  return getDiasCandidatosMes().map(dia => {
+    let temReg = dia.resumo && dia.resumo.numeroRegistros > 0;
+    let val = metricaGrafico === "frequencia"
+      ? (temReg ? dia.resumo.numeroRegistros : 0)
+      : (temReg ? dia.resumo.totalQuantidade : 0);
+    return { label: parseInt(dia.date.split("/")[0], 10), value: val, date: dia.date };
+  });
+}
+
+function atualizarGrafico() {
+  const cont = document.getElementById("chart");
+  const legend = document.getElementById("chartLegend");
+  const rangeLabel = document.getElementById("chartRangeLabel");
+  if (!cont) return;
+
+  const serie = getSerieMensal();
+  if (serie.length === 0) {
+    cont.innerHTML = `<div class="chart-empty">Registre eventos para ver a evolução ao longo do mês.</div>`;
+    if (legend) legend.innerHTML = "";
+    if (rangeLabel) rangeLabel.textContent = "";
+    return;
+  }
+  if (rangeLabel) rangeLabel.textContent = "(mês atual)";
+
+  const W = 720, H = 260;
+  const padL = 34, padR = 12, padT = 14, padB = 26;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const n = serie.length;
+  const maxVal = Math.max(1, ...serie.map(s => s.value));
+  const niceMax = Math.max(1, Math.ceil(maxVal));
+
+  const xCenter = i => padL + (plotW / n) * (i + 0.5);
+  const barW = (plotW / n) * 0.66;
+  const xBar = i => xCenter(i) - barW / 2;
+  const yPos = v => padT + plotH - (plotH * v) / niceMax;
+
+  // Barras (dias zero recebem cor suave)
+  let bars = "";
+  serie.forEach((s, i) => {
+    let bh = plotH * s.value / niceMax;
+    if (s.value === 0) bh = 3; // traço visível para o dia zero (casa com a legenda)
+    let by = padT + plotH - bh;
+    let cor = s.value === 0 ? "var(--accent-border)" : "var(--accent)";
+    let valTxt = metricaGrafico === "frequencia" ? s.value : formatNumber(s.value, 1);
+    bars += `<rect x="${xBar(i).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0, bh).toFixed(1)}" rx="2" fill="${cor}"><title>${s.date}: ${valTxt}</title></rect>`;
+  });
+
+  // Linha de tendência (regressão linear simples sobre os índices)
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  serie.forEach((s, i) => { sx += i; sy += s.value; sxx += i * i; sxy += i * s.value; });
+  let denom = n * sxx - sx * sx;
+  let slope = denom !== 0 ? (n * sxy - sx * sy) / denom : 0;
+  let intercept = (sy - slope * sx) / n;
+  let clamp = v => Math.max(0, Math.min(niceMax, v));
+  let trend = "";
+  if (n >= 2) {
+    let x0 = xCenter(0), x1 = xCenter(n - 1);
+    let y0 = yPos(clamp(intercept)), y1 = yPos(clamp(intercept + slope * (n - 1)));
+    trend = `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="var(--today)" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>`;
+  }
+
+  // Eixos e rótulos
+  let eixos = `
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="var(--border)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="var(--border)" stroke-width="1"/>
+    <text x="${padL - 6}" y="${padT + 4}" text-anchor="end" font-size="10" fill="var(--text-muted)">${niceMax}</text>
+    <text x="${padL - 6}" y="${padT + plotH}" text-anchor="end" font-size="10" fill="var(--text-muted)">0</text>`;
+  let step = Math.max(1, Math.ceil(n / 12));
+  let xlabels = "";
+  serie.forEach((s, i) => {
+    if (i % step === 0 || i === n - 1) {
+      xlabels += `<text x="${xCenter(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--text-muted)">${s.label}</text>`;
+    }
+  });
+
+  cont.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de evolução mensal">${eixos}${bars}${trend}${xlabels}</svg>`;
+
+  if (legend) {
+    let tendTxt = Math.abs(slope) < 1e-9 ? "estável" : (slope < 0 ? "em queda 👍" : "em alta");
+    let nomeMetrica = metricaGrafico === "frequencia" ? "Registros no dia" : "Quantidade no dia";
+    legend.innerHTML =
+      `<span class="lg"><span class="sw" style="background:var(--accent)"></span>${nomeMetrica}</span>` +
+      `<span class="lg"><span class="sw" style="background:var(--accent-border)"></span>Dia zero</span>` +
+      `<span class="lg"><span class="sw" style="background:var(--today)"></span>Tendência (${tendTxt})</span>`;
+  }
+}
+
+function initGrafico() {
+  document.querySelectorAll("#chartToggle button").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-metric") === metricaGrafico);
+    b.addEventListener("click", function() {
+      metricaGrafico = this.getAttribute("data-metric");
+      document.querySelectorAll("#chartToggle button").forEach(x => x.classList.toggle("active", x === this));
+      atualizarGrafico();
+    });
+  });
+}
+
+// Inicializa tema e gráfico
+initTema();
+initGrafico();
 
 // Inicia o carregamento dos dados
 carregarDados();

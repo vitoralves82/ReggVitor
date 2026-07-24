@@ -33,7 +33,7 @@
       --radius-sm: 10px;
     }
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
         --bg: #0b1220;
         --surface: #131c2e;
         --surface-2: #0f1726;
@@ -56,6 +56,31 @@
         --shadow-lg: 0 10px 30px -10px rgba(0,0,0,.6);
       }
     }
+
+    /* Tema forçado pelo usuário (sobrepõe o automático) */
+    :root[data-theme="dark"] {
+      --bg: #0b1220;
+      --surface: #131c2e;
+      --surface-2: #0f1726;
+      --surface-3: #1b2740;
+      --border: #26334a;
+      --border-strong: #35435e;
+      --text: #e6edf6;
+      --text-muted: #93a1b5;
+      --accent: #10b981;
+      --accent-strong: #34d399;
+      --accent-soft: #0c2a20;
+      --accent-border: #14532d;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --gold: #fbbf24;
+      --silver: #cbd5e1;
+      --bronze: #d69256;
+      --today: #60a5fa;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+      --shadow-lg: 0 10px 30px -10px rgba(0,0,0,.6);
+    }
+    /* data-theme="light" usa os valores base de :root (nada a redefinir) */
 
     * { box-sizing: border-box; }
     html { -webkit-text-size-adjust: 100%; }
@@ -345,6 +370,61 @@
     }
     .btn-ghost:hover { background: var(--surface-3); }
 
+    /* ===================== Barra superior / seletor de tema ===================== */
+    .topbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .theme-toggle {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
+      box-shadow: var(--shadow);
+    }
+    .theme-toggle button {
+      background: transparent;
+      color: var(--text-muted);
+      box-shadow: none;
+      border-radius: 999px;
+      padding: 6px 13px;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .theme-toggle button:hover { background: var(--surface-3); color: var(--text); }
+    .theme-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .theme-toggle button.active:hover { background: var(--accent-strong); }
+
+    /* ===================== Gráfico de evolução ===================== */
+    .chart-head {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px;
+    }
+    .chart-toggle { display: inline-flex; gap: 6px; }
+    .chart-toggle button {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      box-shadow: none;
+      padding: 6px 12px;
+      font-size: 12.5px;
+      margin: 0;
+    }
+    .chart-toggle button:hover { background: var(--surface-3); color: var(--text); }
+    .chart-toggle button.active { background: var(--accent); color: #fff; border-color: transparent; }
+    .chart-toggle button.active:hover { background: var(--accent-strong); }
+    #chart { width: 100%; overflow-x: auto; }
+    #chart svg { width: 100%; height: auto; display: block; }
+    .chart-legend {
+      display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .chart-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+    .chart-legend .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+    .chart-empty { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 20px 0; }
+
     /* ===================== Responsivo ===================== */
     @media (max-width: 900px) {
       .main-container, .bottom-container { grid-template-columns: minmax(0, 1fr); }
@@ -354,6 +434,15 @@
 </head>
 <body>
   <div class="app">
+    <!-- Barra superior: seletor de tema -->
+    <div class="topbar">
+      <div class="theme-toggle" id="themeToggle">
+        <button type="button" data-theme-choice="light">Claro</button>
+        <button type="button" data-theme-choice="dark">Escuro</button>
+        <button type="button" data-theme-choice="auto">Auto</button>
+      </div>
+    </div>
+
     <!-- Cabeçalho -->
     <header class="app-header">
       <div class="brand">
@@ -440,6 +529,19 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Evolução (gráfico da série ao longo do tempo) -->
+    <div class="card" id="evolucaoSection" style="margin-bottom: 20px;">
+      <div class="chart-head">
+        <h2>Evolução <span class="card-title-muted" id="chartRangeLabel"></span></h2>
+        <div class="chart-toggle" id="chartToggle">
+          <button type="button" data-metric="quantidade">Quantidade/dia</button>
+          <button type="button" data-metric="frequencia">Registros/dia</button>
+        </div>
+      </div>
+      <div id="chart"></div>
+      <div class="chart-legend" id="chartLegend"></div>
     </div>
 
     <!-- Seção inferior -->
