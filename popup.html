@@ -46,18 +46,28 @@
       text-align: center;
       font-weight: bold;
       color: #4CAF50;
+      min-height: 18px;
+    }
+    #popupResumoHoje {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 13px;
+      color: #555;
     }
   </style>
 </head>
 <body>
   <h2>Registro Rápido</h2>
   <label for="popupQuantidade">Quantidade:</label>
-  <input type="text" id="popupQuantidade" placeholder="Digite a quantidade">
+  <!-- autofocus: foca a quantidade ao abrir o popup -->
+  <input type="text" id="popupQuantidade" placeholder="Digite a quantidade" autofocus>
   <label for="popupHora">Hora (HH:MM):</label>
   <input type="text" id="popupHora" placeholder="hh:mm">
   <button class="register-btn" id="popupRegistrarBtn">Registrar</button>
   <button class="goto-btn" id="popupGotoBtn">Ir para a página de registros</button>
   <div id="popupStatus"></div>
+  <!-- Contexto do dia sem precisar abrir a página completa -->
+  <div id="popupResumoHoje"></div>
   <script src="popup.js"></script>
 </body>
 </html>
