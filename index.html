@@ -7,310 +7,466 @@
   <!-- Carrega o CSS do Flatpickr localmente -->
   <link rel="stylesheet" href="flatpickr.min.css">
   <style>
-    /* Estilos Gerais – Fonte 16px */
+    /* ===================== Tema (claro/escuro) ===================== */
+    :root {
+      --bg: #eef2f7;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #f1f5f9;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --accent: #059669;
+      --accent-strong: #047857;
+      --accent-soft: #ecfdf5;
+      --accent-border: #a7f3d0;
+      --danger: #dc2626;
+      --warn: #b45309;
+      --gold: #f59e0b;
+      --silver: #94a3b8;
+      --bronze: #c2803a;
+      --today: #2563eb;
+      --shadow: 0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.05);
+      --shadow-lg: 0 10px 25px -8px rgba(15,23,42,.18);
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #131c2e;
+        --surface-2: #0f1726;
+        --surface-3: #1b2740;
+        --border: #26334a;
+        --border-strong: #35435e;
+        --text: #e6edf6;
+        --text-muted: #93a1b5;
+        --accent: #10b981;
+        --accent-strong: #34d399;
+        --accent-soft: #0c2a20;
+        --accent-border: #14532d;
+        --danger: #f87171;
+        --warn: #fbbf24;
+        --gold: #fbbf24;
+        --silver: #cbd5e1;
+        --bronze: #d69256;
+        --today: #60a5fa;
+        --shadow: 0 1px 3px rgba(0,0,0,.4);
+        --shadow-lg: 0 10px 30px -10px rgba(0,0,0,.6);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      background-color: #f0f4f8;
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
       font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
-    hr {
-      border: 0;
-      border-top: 1px solid #ccc;
-      margin: 20px 0;
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    table, th, td {
-      border: 1px solid #333;
-    }
-    thead {
-      background-color: #e0e0e0;
-    }
-    th, td {
-      padding: 10px;
-      text-align: left;
-    }
-    button {
-      background-color: #4caf50;
-      border: none;
-      border-radius: 4px;
-      color: #fff;
-      padding: 8px 14px;
-      cursor: pointer;
-      margin: 4px 2px;
-      transition: background-color 0.3s;
-      font-size: 14px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    /* Input de quantidade: tipo text para aceitar vírgula */
-    input[type="text"] {
-      padding: 8px;
-      font-size: 15px;
-      margin-right: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    .delete-btn, .edit-btn, .action-btn {
-      background: none;
-      border: none;
-      color: #555;
-      cursor: pointer;
-      font-size: 15px;
-      margin-left: 4px;
-    }
-    .delete-btn:hover, .edit-btn:hover, .action-btn:hover {
-      color: #000;
-    }
-    /* Calendário */
-    .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
-      margin-top: 10px;
-    }
-    .calendar div {
-      padding: 8px;
-      text-align: center;
-      border: 1px solid #ccc;
-      background-color: #f9f9f9;
-      font-size: 12px;
-      position: relative;
-      transition: background-color 0.3s;
-      min-height: 80px;
-    }
-    .calendar .header {
-      font-weight: bold;
-      background-color: #ddd;
-    }
-    .calendar .day-data {
-      cursor: pointer;
-      background-color: #e9f7ef;
-    }
-    .calendar .day-data:hover {
-      background-color: #cce5ff;
-    }
-    .calendar .day-data.selected-day {
-      background-color: #b3d4fc;
-    }
-    .calendar .day-data.today {
-      background-color: #b3e5fc;
-      border: 2px solid #0277bd;
-    }
-    .calendar .day-data span {
-      font-size: 12px;
-      display: inline;
-      margin-right: 4px;
-    }
-    .calendar .day-data span:not(:last-child)::after {
-      content: "|";
-      margin: 0 4px;
-      color: #aaa;
-    }
-    /* Tabelas */
-    .past-day {
-      background-color: #f5f5f5;
-    }
-    /* Seção do Topo */
-    .top-container {
+    hr { display: none; }
+    h1, h2, h3, h4 { margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 17px; }
+
+    /* ===================== Cabeçalho ===================== */
+    .app-header {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
+      align-items: stretch;
+      gap: 18px;
+      margin-bottom: 22px;
     }
-    .input-section {
-      flex: 1 1 300px;
+    .brand { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+    .brand .subtitle { color: var(--text-muted); font-size: 13.5px; font-weight: 500; }
+    .brand .logo-row { display: flex; align-items: center; gap: 10px; }
+    .brand .logo {
+      width: 40px; height: 40px; border-radius: 11px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      display: grid; place-items: center; color: #fff; font-size: 20px;
+      box-shadow: var(--shadow);
     }
-    .highlight-section {
-      flex: 1 1 300px;
+
+    /* ===================== Cards ===================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
     }
+    .card > h2 { margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .card-title-muted { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+    /* ===================== Formulário de registro ===================== */
+    .register-card { flex: 1 1 420px; }
+    .register-row {
+      display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.grow { flex: 1 1 160px; }
+    .field label {
+      font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    input[type="text"] {
+      padding: 11px 13px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      transition: border-color .15s, box-shadow .15s, background .15s;
+      width: 100%;
+    }
+    input[type="text"]::placeholder { color: var(--text-muted); opacity: .8; }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      background: var(--surface);
+    }
+    button {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      padding: 11px 18px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .15s, transform .05s, box-shadow .15s;
+      box-shadow: var(--shadow);
+    }
+    button:hover { background: var(--accent-strong); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+    .btn-primary { padding: 11px 22px; }
+    #statusMessage { font-weight: 600; color: var(--accent-strong); font-size: 13.5px; align-self: center; }
+
+    /* ===================== Hero "Hoje" ===================== */
+    .highlight-section { flex: 1 1 340px; display: flex; flex-direction: column; gap: 12px; }
     #todayHighlight {
-      background-color: #fff9c4;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 10px;
-      font-weight: bold;
+      background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      font-size: 14.5px;
+      line-height: 1.7;
+      box-shadow: var(--shadow);
+      height: 100%;
     }
-    /* Os resultados dentro de #todayHighlight span.result serão exibidos em vermelho */
-    #todayHighlight span.result {
-      color: red;
-    }
-    #trophyHint {
-      color: #8B0000;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    /* Status de registro */
-    #statusMessage {
-      margin-left: 10px;
-      font-weight: bold;
-      color: #4CAF50;
-    }
-    /* Área principal */
+    #todayHighlight span.result { color: var(--danger); }
+    #trophyHint { color: var(--warn); font-weight: 600; font-size: 13.5px; }
+
+    /* ===================== Layout principal ===================== */
     .main-container {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 20px;
-      flex-wrap: nowrap;
+      margin-bottom: 20px;
     }
-    .left-column {
-      flex: 0 0 50%;
+    .left-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .right-column { min-width: 0; }
+
+    /* ===================== Tabelas ===================== */
+    .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    thead th {
+      background: var(--surface-3);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface-2); }
+    tbody tr.past-day td { color: var(--text-muted); }
+    .empty-hint { padding: 16px 12px; color: var(--text-muted); font-size: 13px; font-style: italic; }
+
+    .delete-btn, .edit-btn, .action-btn {
+      background: none; border: none; box-shadow: none;
+      color: var(--text-muted);
+      cursor: pointer; font-size: 15px; padding: 2px 4px; margin: 0;
+      border-radius: 6px;
+    }
+    .delete-btn:hover, .edit-btn:hover, .action-btn:hover {
+      color: var(--text); background: var(--surface-3);
+    }
+
+    /* ===================== Calendário ===================== */
+    #mesAtual { margin-bottom: 14px; }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .calendar .header {
+      text-align: center;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-muted);
+      padding: 4px 0 8px;
+      min-height: 0;
+    }
+    .calendar .cal-empty { background: transparent; border: none; min-height: 0; }
+    .calendar .day-data {
+      position: relative;
+      min-height: 82px;
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: background .15s, border-color .15s, transform .05s, box-shadow .15s;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 4px;
     }
-    .right-column {
-      flex: 0 0 50%;
+    .calendar .day-data:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
+    .calendar .day-data .cal-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 4px;
     }
-    /* Seção Inferior */
+    .calendar .day-data .cal-daynum { font-size: 13px; font-weight: 600; color: var(--text); }
+    .calendar .day-data .cal-badges { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+    .calendar .cal-badge { font-size: 15px; line-height: 1; }
+    .calendar .cal-badge.zero-check { color: var(--accent); }
+    .calendar .day-data .cal-stats {
+      font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-top: auto;
+    }
+    /* Dia dentro do período de uso, mas sem registro = meta atingida */
+    .calendar .day-data.zero-day {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+    }
+    /* Dia fora do período de uso (antes do 1º registro ou futuro) */
+    .calendar .day-data.out-range { opacity: .5; cursor: default; }
+    .calendar .day-data.out-range:hover { border-color: var(--border); box-shadow: none; }
+    .calendar .day-data.selected-day {
+      border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+    .calendar .day-data.today {
+      border-color: var(--today);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--today) 25%, transparent);
+    }
+    .calendar .day-data.today .cal-daynum { color: var(--today); }
+
+    /* ===================== Seção inferior ===================== */
     .bottom-container {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
       gap: 20px;
-      flex-wrap: wrap;
+      margin-bottom: 20px;
     }
-    #rankingPanel {
-      flex: 1 1 300px;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-around;
-      align-items: flex-start;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.15);
-      padding: 12px;
+    #rankingPanel { display: flex; flex-direction: column; gap: 6px; }
+    #rankingPanel h2 { margin-bottom: 6px; }
+    #rankingPanel .ranking-category {
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
     }
-    #notesContainer {
-      flex: 2 1 400px;
+    #rankingPanel h4 {
+      font-size: 12px; text-transform: uppercase; letter-spacing: .03em;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    #rankingPanel .ranking-category > div {
+      display: flex; align-items: center; gap: 8px; font-size: 13.5px; padding: 2px 0;
     }
     #notesContainer textarea {
       width: 100%;
-      max-width: 600px;
-      height: 70px;
-      display: block;
+      min-height: 120px;
+      resize: vertical;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
       margin-bottom: 10px;
+      transition: border-color .15s, box-shadow .15s;
     }
-    #saveFeedback {
-      color: green;
-      font-weight: bold;
-      display: none;
-      margin-top: 5px;
+    #notesContainer textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
     }
-    /* Ícones dos prêmios */
+    .notes-row { display: flex; align-items: center; gap: 12px; }
+    #saveFeedback { color: var(--accent-strong); font-weight: 600; display: none; font-size: 13.5px; }
+
+    /* Medalhas do ranking */
     .prize-square {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
-      border: 1px solid #000;
+      display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+      border: none; flex: none;
     }
-    .prize-first { background-color: #FFD700; }
-    .prize-second { background-color: #C0C0C0; }
-    .prize-third { background-color: #CD7F32; }
-    .record-icon {
-      margin-left: 4px;
+    .prize-first { background-color: var(--gold); }
+    .prize-second { background-color: var(--silver); }
+    .prize-third { background-color: var(--bronze); }
+    .record-icon { margin-left: 4px; }
+
+    /* ===================== Barra de backup ===================== */
+    .backup-bar {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding-top: 4px;
     }
-    #championDisplay {
-      margin-top: 10px;
-      font-weight: normal;
+    .backup-bar .backup-label { color: var(--text-muted); font-size: 12.5px; font-weight: 600; margin-right: 4px; }
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      box-shadow: none;
+      font-weight: 600;
+    }
+    .btn-ghost:hover { background: var(--surface-3); }
+
+    /* ===================== Responsivo ===================== */
+    @media (max-width: 900px) {
+      .main-container, .bottom-container { grid-template-columns: minmax(0, 1fr); }
+      .app { padding: 18px 16px 48px; }
     }
   </style>
 </head>
 <body>
-  <!-- Topo -->
-  <div class="top-container">
-    <div class="input-section">
-      <h1>Registro de Atividade</h1>
-      <div id="inputContainer" style="margin-top: 20px;">
-        <label for="quantidade">Quantidade:</label>
-        <input type="text" id="quantidade" step="0.1" placeholder="Digite a quantidade">
-        <label for="horaInput">Hora:</label>
-        <input type="text" id="horaInput" placeholder="hh:mm">
-        <button id="registrarBtn" title="Registrar novo evento">Registrar</button>
+  <div class="app">
+    <!-- Cabeçalho -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-row">
+          <div class="logo">📉</div>
+          <h1>Registro de Atividade</h1>
+        </div>
+        <span class="subtitle">Acompanhe seus registros e reduza frequência e quantidade ao longo do tempo.</span>
+      </div>
+      <div class="highlight-section">
+        <div id="todayHighlight">Hoje (xx/xx/xxxx): <span class="result"></span></div>
+        <div id="trophyHint"></div>
+      </div>
+    </header>
+
+    <!-- Registro rápido -->
+    <div class="card register-card" style="margin-bottom: 20px;">
+      <h2>Novo registro</h2>
+      <div id="inputContainer" class="register-row">
+        <div class="field grow">
+          <label for="quantidade">Quantidade</label>
+          <input type="text" id="quantidade" step="0.1" placeholder="Digite a quantidade">
+        </div>
+        <div class="field">
+          <label for="horaInput">Hora</label>
+          <input type="text" id="horaInput" placeholder="hh:mm">
+        </div>
+        <button id="registrarBtn" class="btn-primary" title="Registrar novo evento">Registrar</button>
         <span id="statusMessage"></span>
       </div>
     </div>
-    <div class="highlight-section">
-      <div id="todayHighlight">Hoje (xx/xx/xxxx): <span class="result"></span></div>
-      <div id="trophyHint"></div>
+
+    <!-- Área principal -->
+    <div class="main-container">
+      <div class="left-column">
+        <div class="card table-wrapper" id="registrosSection">
+          <h2>Registros Diários <span class="card-title-muted" id="selectedDateDisplay"></span></h2>
+          <div class="table-scroll">
+            <table id="registrosTable">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Dia</th>
+                  <th>Hora</th>
+                  <th>Quantidade</th>
+                  <th>Tempo desde último (min)</th>
+                  <th>Intervalo do dia anterior</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- As linhas serão geradas dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card table-wrapper" id="resumoSection">
+          <h2>Resumo Diário</h2>
+          <div class="table-scroll">
+            <table id="resumoTable">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Dia</th>
+                  <th>Total Quantidade</th>
+                  <th>Nº de Registros</th>
+                  <th>Maior Intervalo Intra (min)</th>
+                  <th>Intervalo do dia anterior</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- As linhas serão geradas dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="right-column">
+        <div class="card">
+          <h2 id="mesAtual">Calendário Mensal</h2>
+          <div class="calendar" id="calendar">
+            <!-- O calendário será gerado dinamicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção inferior -->
+    <div class="bottom-container">
+      <div class="card" id="rankingPanel">
+        <!-- Ranking e Metas serão gerados dinamicamente -->
+      </div>
+      <div class="card" id="notesContainer">
+        <h2>Anotações do Dia <span class="card-title-muted" id="notesDateDisplay"></span></h2>
+        <textarea id="dailyNotes" placeholder="Escreva suas anotações aqui..."></textarea>
+        <div class="notes-row">
+          <button id="salvarNotasBtn">Salvar Anotações</button>
+          <div id="saveFeedback">Salvo!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup -->
+    <div class="card backup-bar">
+      <span class="backup-label">Backup</span>
+      <button id="exportarJsonBtn" class="btn-ghost" title="Exportar JSON (backup completo com anotações)">Exportar JSON</button>
+      <button id="exportarBtn" class="btn-ghost" title="Exportar CSV">Exportar CSV</button>
+      <button id="importarBtn" class="btn-ghost" title="Importar backup (JSON ou CSV)">Importar backup</button>
+      <input type="file" id="fileInput" accept=".json,.csv" style="display: none;">
     </div>
   </div>
-  <hr>
-  <!-- Área principal -->
-  <div class="main-container">
-    <div class="left-column">
-      <div class="table-wrapper" id="registrosSection">
-        <h2>Registros Diários - <span id="selectedDateDisplay"></span></h2>
-        <table id="registrosTable">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Dia</th>
-              <th>Hora</th>
-              <th>Quantidade</th>
-              <th>Tempo desde último (min)</th>
-              <th>Intervalo do dia anterior</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- As linhas serão geradas dinamicamente -->
-          </tbody>
-        </table>
-      </div>
-      <div class="table-wrapper" id="resumoSection">
-        <h2>Resumo Diário</h2>
-        <table id="resumoTable">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Dia</th>
-              <th>Total Quantidade</th>
-              <th>Nº de Registros</th>
-              <th>Maior Intervalo Intra (min)</th>
-              <th>Intervalo do dia anterior</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- As linhas serão geradas dinamicamente -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="right-column">
-      <h2 id="mesAtual">Calendário Mensal</h2>
-      <div class="calendar" id="calendar">
-        <!-- O calendário será gerado dinamicamente -->
-      </div>
-    </div>
-  </div>
-  <hr>
-  <!-- Seção Inferior -->
-  <div class="bottom-container">
-    <div id="rankingPanel">
-      <!-- Ranking e Metas serão gerados dinamicamente -->
-    </div>
-    <div id="notesContainer">
-      <h2>Anotações do Dia (<span id="notesDateDisplay"></span>)</h2>
-      <textarea id="dailyNotes" placeholder="Escreva suas anotações aqui..."></textarea>
-      <button id="salvarNotasBtn">Salvar Anotações</button>
-      <div id="saveFeedback">Salvo!</div>
-    </div>
-  </div>
-  <hr>
-  <!-- Botões de Exportar/Importar -->
-  <button id="exportarJsonBtn" title="Exportar JSON (backup completo com anotações)">Exportar JSON (backup completo)</button>
-  <button id="exportarBtn" title="Exportar CSV">Exportar CSV</button>
-  <button id="importarBtn" title="Importar backup (JSON ou CSV)">Importar backup</button>
-  <input type="file" id="fileInput" accept=".json,.csv" style="display: none;">
+
   <!-- Carrega o Flatpickr e os scripts locais -->
   <script src="flatpickr.min.js"></script>
   <script src="script.js"></script>
