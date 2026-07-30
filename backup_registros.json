@@ -1,0 +1,338 @@
+{
+  "versao": 1,
+  "exportadoEm": "2026-07-30T01:20:36.018Z",
+  "registros": [
+    {
+      "data": "23/07/2026",
+      "hora": "23:47",
+      "quantidade": 0.8,
+      "timestamp": 1784861220000
+    },
+    {
+      "data": "23/07/2026",
+      "hora": "20:47",
+      "quantidade": 0.8,
+      "timestamp": 1784850420000
+    },
+    {
+      "data": "23/07/2026",
+      "hora": "18:47",
+      "quantidade": 0.8,
+      "timestamp": 1784843220000
+    },
+    {
+      "data": "23/07/2026",
+      "hora": "15:47",
+      "quantidade": 0.8,
+      "timestamp": 1784832420000
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "09:00",
+      "quantidade": 0.8,
+      "timestamp": 1784894435588
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "21:04",
+      "quantidade": 0.2,
+      "timestamp": 1784937840000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "09:24",
+      "quantidade": 0.5,
+      "timestamp": 1784982240000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "10:38",
+      "quantidade": 0.5,
+      "timestamp": 1784986680000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "11:27",
+      "quantidade": 0.5,
+      "timestamp": 1784989620000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "14:15",
+      "quantidade": 0.4,
+      "timestamp": 1784999700000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "15:05",
+      "quantidade": 0.4,
+      "timestamp": 1785002700000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "17:48",
+      "quantidade": 0.5,
+      "timestamp": 1785012480000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "18:03",
+      "quantidade": 0.4,
+      "timestamp": 1785013380000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "18:31",
+      "quantidade": 0.5,
+      "timestamp": 1785015060000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "19:31",
+      "quantidade": 0.4,
+      "timestamp": 1785018660000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "21:28",
+      "quantidade": 0.5,
+      "timestamp": 1785025680000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "22:42",
+      "quantidade": 0.5,
+      "timestamp": 1785030120000
+    },
+    {
+      "data": "25/07/2026",
+      "hora": "23:24",
+      "quantidade": 0.4,
+      "timestamp": 1785032640000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "00:20",
+      "quantidade": 0.5,
+      "timestamp": 1785036000000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "09:49",
+      "quantidade": 0.8,
+      "timestamp": 1785070140000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "10:49",
+      "quantidade": 0.3,
+      "timestamp": 1785073740000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "11:26",
+      "quantidade": 0.5,
+      "timestamp": 1785075960000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "11:26",
+      "quantidade": 0.5,
+      "timestamp": 1785075960000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "14:07",
+      "quantidade": 0.5,
+      "timestamp": 1785085620000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "15:44",
+      "quantidade": 0.4,
+      "timestamp": 1785091440000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "16:27",
+      "quantidade": 0.5,
+      "timestamp": 1785094020000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "16:27",
+      "quantidade": 0.4,
+      "timestamp": 1785094020000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "17:44",
+      "quantidade": 0.2,
+      "timestamp": 1785098640000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "17:45",
+      "quantidade": 0.5,
+      "timestamp": 1785098700000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "11:57",
+      "quantidade": 0.2,
+      "timestamp": 1785077820000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "21:35",
+      "quantidade": 0.5,
+      "timestamp": 1785112500000
+    },
+    {
+      "data": "26/07/2026",
+      "hora": "21:49",
+      "quantidade": 0.4,
+      "timestamp": 1785113340000
+    },
+    {
+      "data": "27/07/2026",
+      "hora": "09:06",
+      "quantidade": 0.4,
+      "timestamp": 1785153960000
+    },
+    {
+      "data": "27/07/2026",
+      "hora": "12:44",
+      "quantidade": 0.5,
+      "timestamp": 1785167040000
+    },
+    {
+      "data": "27/07/2026",
+      "hora": "19:02",
+      "quantidade": 0.8,
+      "timestamp": 1785189720000
+    },
+    {
+      "data": "28/07/2026",
+      "hora": "13:00",
+      "quantidade": 0.5,
+      "timestamp": 1785254400000
+    },
+    {
+      "data": "28/07/2026",
+      "hora": "18:40",
+      "quantidade": 0.7,
+      "timestamp": 1785274800000
+    },
+    {
+      "data": "28/07/2026",
+      "hora": "20:57",
+      "quantidade": 0.8,
+      "timestamp": 1785283020000
+    },
+    {
+      "data": "29/07/2026",
+      "hora": "14:09",
+      "quantidade": 0.4,
+      "timestamp": 1785344940000
+    },
+    {
+      "data": "29/07/2026",
+      "hora": "16:33",
+      "quantidade": 0.6,
+      "timestamp": 1785353580000
+    },
+    {
+      "data": "29/07/2026",
+      "hora": "08:32",
+      "quantidade": 0.4,
+      "timestamp": 1785324720000
+    },
+    {
+      "data": "29/07/2026",
+      "hora": "10:41",
+      "quantidade": 0.6,
+      "timestamp": 1785332460000
+    },
+    {
+      "data": "29/07/2026",
+      "hora": "12:30",
+      "quantidade": 0.4,
+      "timestamp": 1785339000000
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "19:42",
+      "quantidade": 0.4,
+      "timestamp": 1784932920000
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "16:46",
+      "quantidade": 0.6,
+      "timestamp": 1784922360000
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "18:46",
+      "quantidade": 0.4,
+      "timestamp": 1784929560000
+    },
+    {
+      "data": "24/07/2026",
+      "hora": "22:46",
+      "quantidade": 0.8,
+      "timestamp": 1784943960000
+    },
+    {
+      "data": "27/07/2026",
+      "hora": "21:30",
+      "quantidade": 0.4,
+      "timestamp": 1785198600000
+    }
+  ],
+  "resumoDiario": {
+    "23/07/2026": {
+      "notes": "",
+      "totalQuantidade": 3.2,
+      "numeroRegistros": 4,
+      "maiorIntervaloIntra": 180
+    },
+    "24/07/2026": {
+      "notes": "",
+      "totalQuantidade": 3.2,
+      "numeroRegistros": 6,
+      "maiorIntervaloIntra": 465
+    },
+    "25/07/2026": {
+      "notes": "",
+      "totalQuantidade": 5.5,
+      "numeroRegistros": 12,
+      "maiorIntervaloIntra": 168
+    },
+    "26/07/2026": {
+      "notes": "",
+      "totalQuantidade": 6.200000000000001,
+      "numeroRegistros": 14,
+      "maiorIntervaloIntra": 569
+    },
+    "27/07/2026": {
+      "notes": "",
+      "totalQuantidade": 2.1,
+      "numeroRegistros": 4,
+      "maiorIntervaloIntra": 378
+    },
+    "28/07/2026": {
+      "notes": "",
+      "totalQuantidade": 2,
+      "numeroRegistros": 3,
+      "maiorIntervaloIntra": 340
+    },
+    "29/07/2026": {
+      "notes": "",
+      "totalQuantidade": 2.4,
+      "numeroRegistros": 5,
+      "maiorIntervaloIntra": 144
+    }
+  }
+}

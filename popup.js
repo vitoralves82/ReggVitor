@@ -84,15 +84,21 @@ function renderChips(registros) {
   });
 }
 
-// Atualiza o resumo do dia e os chips de valor a partir do storage
+// Atualiza o resumo do dia e os chips de valor a partir do storage.
+// Usa o mesmo dia lógico da página (começa às 04h), para as duas telas
+// contarem a mesma coisa quando há registro de madrugada.
+function chaveLogicaPopup(ts) {
+  let d = new Date(ts - 4 * 3600000);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
 function atualizarResumoHoje() {
   let resumoDiv = document.getElementById("popupResumoHoje");
-  let hoje = formatDate(new Date());
+  let hoje = chaveLogicaPopup(Date.now());
   chrome.storage.local.get(["registros"], function(result) {
     let registros = result.registros ? JSON.parse(result.registros) : [];
-    let doDia = registros.filter(r => r.data === hoje);
+    let doDia = registros.filter(r => chaveLogicaPopup(parseInt(r.timestamp, 10)) === hoje);
     let total = doDia.reduce((soma, r) => soma + (r.quantidade || 0), 0);
-    resumoDiv.textContent = `Hoje: ${doDia.length} registros, total ${formatNumberBR(total)}`;
+    resumoDiv.textContent = `Hoje: ${doDia.length} registros · ${formatNumberBR(total)} g`;
     renderChips(registros);
   });
 }
