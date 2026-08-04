@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>Registro Rápido</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --surface-2: #f8fafc;
-      --surface-3: #f1f5f9;
-      --border: #cbd5e1;
-      --border-strong: #cbd5e1;
-      --text: #1e293b;
-      --text-muted: #64748b;
+      --bg: #dfe7f1;
+      --surface: #f8fafc;
+      --surface-2: #ffffff;
+      --surface-3: #d6e0eb;
+      --border: #b9c7d8;
+      --border-strong: #7b8fa7;
+      --text: #0f172a;
+      --text-muted: #475569;
       --accent: #059669;
       --accent-strong: #047857;
       --accent-soft: #ecfdf5;
@@ -23,10 +24,11 @@
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme]) {
         --bg: #131c2e;
-        --surface-2: #0f1726;
-        --surface-3: #1b2740;
-        --border: #35435e;
-        --border-strong: #35435e;
+        --surface: #162237;
+        --surface-2: #1c2740;
+        --surface-3: #263752;
+        --border: #3a4d70;
+        --border-strong: #46608a;
         --text: #e6edf6;
         --text-muted: #93a1b5;
         --accent: #10b981;
@@ -40,10 +42,11 @@
     /* Tema forçado pelo usuário (salvo na página completa) */
     :root[data-theme="dark"] {
       --bg: #131c2e;
-      --surface-2: #0f1726;
-      --surface-3: #1b2740;
-      --border: #35435e;
-      --border-strong: #35435e;
+      --surface: #162237;
+      --surface-2: #1c2740;
+      --surface-3: #263752;
+      --border: #3a4d70;
+      --border-strong: #46608a;
       --text: #e6edf6;
       --text-muted: #93a1b5;
       --accent: #10b981;
@@ -63,6 +66,7 @@
       color: var(--text);
       font-size: 14px;
     }
+    input, .time-field select, .chip, .btn-agora, .stat, #popupMsg { box-shadow: 0 6px 18px rgba(30,55,85,.07); }
     .head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
     .head .logo {
       width: 30px; height: 30px; border-radius: 8px;
@@ -165,14 +169,59 @@
       min-height: 18px;
       font-size: 13.5px;
     }
-    #popupResumoHoje {
-      margin-top: 12px;
-      text-align: center;
-      font-size: 12.5px;
-      color: var(--text-muted);
-      padding-top: 12px;
+    /* Painel de contexto: hoje, 7 dias e tempo desde o último registro */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 14px;
+      padding-top: 14px;
       border-top: 1px solid var(--border);
     }
+    .stat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 6px 8px;
+      text-align: center;
+      min-width: 0;
+    }
+    .stat .lab {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      white-space: nowrap;
+    }
+    .stat .val {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .stat .val .u { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 1px; }
+    .stat .sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; }
+    .stat.acc { border-color: var(--accent); background: var(--accent-soft); }
+    .stat.acc .val { color: var(--accent-strong); }
+    #popupMsg {
+      margin-top: 11px;
+      padding: 10px 11px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+      text-align: left;
+      text-wrap: pretty;
+      min-height: 17px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 9px 9px 0;
+    }
+    #popupMsg::before { content:"Direção agora"; display:block; color:var(--accent-strong); font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px; }
   </style>
 </head>
 <body>
@@ -196,7 +245,25 @@
   <button class="goto-btn" id="popupGotoBtn">Ir para a página de registros</button>
   <div id="popupStatus"></div>
   <!-- Contexto do dia sem precisar abrir a página completa -->
-  <div id="popupResumoHoje"></div>
+  <div class="stats">
+    <div class="stat acc">
+      <div class="lab">Hoje</div>
+      <div class="val" id="stHoje">0<span class="u">g</span></div>
+      <div class="sub" id="stHojeSub">0 registros</div>
+    </div>
+    <div class="stat">
+      <div class="lab">7 dias</div>
+      <div class="val" id="stSem">0<span class="u">g</span></div>
+      <div class="sub" id="stSemSub">0 g/dia</div>
+    </div>
+    <div class="stat">
+      <div class="lab">Último</div>
+      <div class="val" id="stGap">—</div>
+      <div class="sub" id="stGapSub">atrás</div>
+    </div>
+  </div>
+  <div id="popupMsg"></div>
+  <script src="mensagens.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
