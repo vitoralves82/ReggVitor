@@ -53,8 +53,10 @@ function focarQuantidade() {
 
 // Aplica o tema salvo pelo usuário (mesma preferência da página completa)
 function aplicarTemaSalvo() {
-  chrome.storage.local.get(["tema"], function(result) {
-    let escolha = result.tema || "light";
+  chrome.storage.local.get(["config"], function(result) {
+    let cfg = {};
+    try { cfg = result.config ? JSON.parse(result.config) : {}; } catch (e) { cfg = {}; }
+    let escolha = cfg.tema || "dark";
     if (escolha === "light" || escolha === "dark") {
       document.documentElement.setAttribute("data-theme", escolha);
     } else {
@@ -84,6 +86,17 @@ function renderChips(registros) {
   });
 }
 
+// Intervalo legível a partir de milissegundos
+function formatGap(ms) {
+  let min = Math.floor(ms / 60000);
+  if (min < 1) return { v: "agora", u: "", txt: "agora mesmo" };
+  if (min < 60) return { v: String(min), u: "min", txt: min + " min" };
+  let h = Math.floor(min / 60), m = min % 60;
+  if (h < 24) return { v: h + "h" + String(m).padStart(2, "0"), u: "", txt: h + "h" + String(m).padStart(2, "0") };
+  let d = Math.floor(h / 24);
+  return { v: String(d), u: "d", txt: d + " dia" + (d > 1 ? "s" : "") };
+}
+
 // Atualiza o resumo do dia e os chips de valor a partir do storage.
 // Usa o mesmo dia lógico da página (começa às 04h), para as duas telas
 // contarem a mesma coisa quando há registro de madrugada.
@@ -91,14 +104,49 @@ function chaveLogicaPopup(ts) {
   let d = new Date(ts - 4 * 3600000);
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
+
+let ultimoTs = null; // guardado para o contador de intervalo seguir correndo
+
+function pintarGap() {
+  let vEl = document.getElementById("stGap");
+  let sEl = document.getElementById("stGapSub");
+  if (!ultimoTs) { vEl.textContent = "—"; sEl.textContent = "sem registro"; return null; }
+  let g = formatGap(Date.now() - ultimoTs);
+  vEl.innerHTML = g.v + (g.u ? '<span class="u">' + g.u + "</span>" : "");
+  sEl.textContent = "desde o último";
+  return g.txt;
+}
+
 function atualizarResumoHoje() {
-  let resumoDiv = document.getElementById("popupResumoHoje");
   let hoje = chaveLogicaPopup(Date.now());
   chrome.storage.local.get(["registros"], function(result) {
     let registros = result.registros ? JSON.parse(result.registros) : [];
     let doDia = registros.filter(r => chaveLogicaPopup(parseInt(r.timestamp, 10)) === hoje);
     let total = doDia.reduce((soma, r) => soma + (r.quantidade || 0), 0);
-    resumoDiv.textContent = `Hoje: ${doDia.length} registros · ${formatNumberBR(total)} g`;
+
+    // Janela de 7 dias lógicos (inclui hoje)
+    let corte = Date.now() - 7 * 86400000;
+    let sem = registros.filter(r => parseInt(r.timestamp, 10) >= corte);
+    let totalSem = sem.reduce((soma, r) => soma + (r.quantidade || 0), 0);
+
+    document.getElementById("stHoje").innerHTML = formatNumberBR(total) + '<span class="u">g</span>';
+    document.getElementById("stHojeSub").textContent = doDia.length + (doDia.length === 1 ? " registro" : " registros");
+    document.getElementById("stSem").innerHTML = formatNumberBR(totalSem) + '<span class="u">g</span>';
+    document.getElementById("stSemSub").textContent = formatNumberBR(totalSem / 7) + " g/dia";
+
+    let ts = registros.reduce((mx, r) => Math.max(mx, parseInt(r.timestamp, 10) || 0), 0);
+    ultimoTs = ts || null;
+    let gapTxt = pintarGap();
+
+    // Frase de contexto (banco em mensagens.js)
+    let msgEl = document.getElementById("popupMsg");
+    if (msgEl && window.MSGS) {
+      if (!registros.length) msgEl.textContent = window.MSGS.escolher("sem_dados");
+      else if (!doDia.length) msgEl.textContent = window.MSGS.escolher("popup_limpo");
+      else if (gapTxt && (Date.now() - ultimoTs) >= 3 * 3600000) msgEl.textContent = window.MSGS.escolher("popup_intervalo", { gap: gapTxt });
+      else msgEl.textContent = window.MSGS.escolher("popup_neutro");
+    }
+
     renderChips(registros);
   });
 }
@@ -168,3 +216,5 @@ popularSelectsHora(document.getElementById("popupHH"), document.getElementById("
 setSelectsHora(document.getElementById("popupHH"), document.getElementById("popupMM"), new Date());
 focarQuantidade();
 atualizarResumoHoje();
+// O contador de intervalo precisa continuar correndo enquanto o popup fica aberto
+setInterval(pintarGap, 30000);

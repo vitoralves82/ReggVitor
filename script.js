@@ -70,7 +70,7 @@ function q(sel) { return document.querySelector(sel); }
 var S = {
   regs: [],            // {id, ts, q, gatilho}
   tipos: {},           // "AAAA-MM-DD" -> "home"|"office"|"off"
-  cfg: { janela: 90, meta: 10, tema: "dark", tom: true, discreto: false },
+  cfg: { janela: 90, meta: 10, tema: "dark" },
   sel: null,
   filtroHora: "todos",
   mesOffset: 0,
@@ -99,7 +99,7 @@ function normalizar(arr) {
   return arr.map(function (r, i) {
     var ts = parseInt(r.timestamp, 10);
     if (isNaN(ts)) ts = Date.now();
-    return { id: r.id || (String(ts) + "-" + i), ts: ts, q: parseFloat(r.quantidade != null ? r.quantidade : r.q) || 0, gatilho: r.gatilho || "" };
+    return { id: r.id || (String(ts) + "-" + i), ts: ts, q: parseFloat(r.quantidade != null ? r.quantidade : r.q) || 0, gatilho: r.gatilho || "", nota: r.nota || "" };
   }).sort(function (a, b) { return a.ts - b.ts; });
 }
 function serializar() {
@@ -108,7 +108,7 @@ function serializar() {
     return {
       data: pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear(),
       hora: pad2(d.getHours()) + ":" + pad2(d.getMinutes()),
-      quantidade: r.q, timestamp: r.ts, gatilho: r.gatilho || ""
+      quantidade: r.q, timestamp: r.ts, gatilho: r.gatilho || "", nota: r.nota || ""
     };
   });
 }
@@ -243,31 +243,75 @@ function corDelta(delta) {
 }
 function G(txt) { return txt; } // valores sensíveis recebem classe .hide no DOM
 
+/* A frase só muda quando o contexto muda: render() roda a cada edição e a
+   troca a cada tecla seria ruído visual. */
+var _frases = {};
+function frase(chave, gerar) {
+  if (!_frases[chave]) _frases[chave] = gerar();
+  return _frases[chave];
+}
+
 function render() {
   var A = analisar();
   var sel = S.sel || hoje();
   if (!A.mapa[sel] && A.dias.length) sel = hoje();
   S.sel = sel;
 
-  document.body.classList.toggle("discreto", !!S.cfg.discreto);
   q("#janelaBadge").textContent = A.jan.length ? "últimos " + A.jan.length + " dias · dia lógico 04h→04h" : "sem dados";
 
   renderVeredito(A);
   renderKpis(A);
+  renderOrientacao(A);
   renderGrafico(A);
   renderTipos(A);
   renderGatilhos(A);
   renderHoras(A);
   renderAlavancas(A);
   renderCalendario(A, sel);
+  renderRota(A);
   renderSequencia(A);
   renderMarcos(A);
   renderDia(A, sel);
 }
 
+/* ------------------------- orientação prática ------------------------- */
+function renderOrientacao(A) {
+  var titulo = "Continue registrando para revelar o primeiro padrão.";
+  var motivo = "O painel precisa de alguns dias comparáveis antes de recomendar uma mudança.";
+  if (A.jan.length >= 4) {
+    var total = somaG(A.jan) || 1;
+    var off = A.jan.filter(function (d) { return d.tipo === "off"; });
+    var fatiaOff = somaG(off) / total * 100;
+    var depois20 = 0;
+    A.jan.forEach(function (d) {
+      d.regs.forEach(function (r) { if (new Date(r.ts).getHours() >= 20) depois20 += r.q; });
+    });
+    var fatiaNoite = depois20 / total * 100;
+
+    if (off.length >= 2 && fatiaOff >= 35) {
+      titulo = "No próximo dia off, defina antes um teto 20% menor que a sua mediana.";
+      motivo = "Dias off concentram " + n0(fatiaOff) + "% do total desta janela; uma mudança ali tem mais efeito que pequenos cortes espalhados.";
+    } else if (A.gapAtual !== null && A.gapAtual < 180) {
+      titulo = "Durante 7 dias, acrescente 30 minutos ao intervalo que você faria normalmente.";
+      motivo = "Seu intervalo médio recente é " + hm(A.gapAtual) + ". Alongar o espaço entre decisões reduz o automático sem exigir um corte brusco.";
+    } else if (fatiaNoite >= 35) {
+      titulo = "Escolha um horário de encerramento 30 minutos antes do padrão atual.";
+      motivo = n0(fatiaNoite) + "% do total acontece depois das 20h. Fechar essa janela é um teste simples e mensurável.";
+    } else if (A.delta !== null && A.delta > -3) {
+      titulo = "Escolha uma única alavanca abaixo e mantenha-a por 7 dias.";
+      motivo = "A tendência ainda não está caindo. Mudar uma variável por vez permite saber o que realmente funcionou.";
+    } else {
+      titulo = "Repita por mais 7 dias a mudança que já fez a média cair.";
+      motivo = "A redução está aparecendo nos dados. Sustentar o comportamento é mais útil que acelerar e perder consistência.";
+    }
+  }
+  q("#acaoAgora").textContent = titulo;
+  q("#acaoPorque").textContent = motivo;
+}
+
 /* ------------------------------ veredito ------------------------------ */
 function renderVeredito(A) {
-  var d = A.delta, pct = S.cfg.meta, ironico = S.cfg.tom, l1, l2;
+  var d = A.delta, pct = S.cfg.meta, l1, l2;
   var jan = A.jan;
   var alvoHoje = jan.length ? A.roll[A.dias.length - jan.length] * Math.pow(1 - pct / 100, jan.length / 30) : 0;
   var offShare = 0, tOffDias = 0;
@@ -275,28 +319,33 @@ function renderVeredito(A) {
   jan.forEach(function (x) { if (x.tipo === "off") { offShare += x.g; tOffDias++; } });
   offShare = offShare / gJan * 100;
 
+  var hj = hoje();
+  var dHoje = A.mapa[hj];
+  var medDia = A.completos.length ? mediana(A.completos.map(function (x) { return x.g; })) : 0;
+  var estado = {
+    semDados: !A.dias.length,
+    poucosDados: A.dias.length > 0 && d === null,
+    diaPesado: !!(dHoje && medDia > 0 && dHoje.g > medDia * 1.5),
+    streak: A.streak,
+    delta: d
+  };
+
   if (!A.dias.length) {
-    l1 = "Nenhum dado. Um painel vazio é honesto, mas inútil.";
-    l2 = "Registre uma semana e este espaço começa a te dizer coisas que você não quer ouvir.";
+    l1 = "Nenhum registro ainda.";
   } else if (d === null) {
-    l1 = "Faltam duas semanas completas para comparar.";
-    l2 = "Você tem " + A.completos.length + " dia(s) completo(s). Até lá, olhe as alavancas — elas já funcionam com poucos dias.";
+    l1 = "Faltam duas semanas completas para comparar. Você já tem " + A.completos.length + " dia(s) completo(s).";
   } else if (d >= 15) {
-    l1 = ironico ? "Subiu " + n0(d) + "% em sete dias e você chamou isso de semana normal." : "Alta de " + n0(d) + "% em relação aos 7 dias anteriores.";
-    l2 = "Não é falta de força — é falta de plano. " + n0(offShare) + "% do seu total mora nos dias off.";
+    l1 = "Alta de " + n0(d) + "% em relação aos 7 dias anteriores. " + n0(offShare) + "% do total está nos dias off.";
   } else if (d >= 3) {
-    l1 = ironico ? "Mais " + n0(d) + "%. Pequeno o suficiente para ignorar. É sempre assim que começa." : "Alta de " + n0(d) + "%.";
-    l2 = "A média móvel está em " + n1(A.rollAtual) + " g/dia" + (pct > 0 ? "; a trajetória da meta pedia " + n1(alvoHoje) + " g/dia hoje." : ".");
+    l1 = "Alta de " + n0(d) + "%. Média móvel em " + n1(A.rollAtual) + " g/dia" + (pct > 0 ? "; a trajetória pedia " + n1(alvoHoje) + " g/dia hoje" : "") + ".";
   } else if (d > -3) {
-    l1 = ironico ? "Estável. “Estável” é a palavra elegante para “nada mudou”." : "Estável em relação aos 7 dias anteriores.";
-    l2 = "Mesmo patamar: " + n1(A.rollAtual) + " g/dia. Escolha uma alavanca abaixo e mexa em uma coisa só.";
+    l1 = "Estável em relação aos 7 dias anteriores. Patamar de " + n1(A.rollAtual) + " g/dia.";
   } else if (d > -15) {
-    l1 = ironico ? n0(-d) + "% menos. Não é heroísmo, é aritmética — e aritmética repete." : "Queda de " + n0(-d) + "%.";
-    l2 = "Sequência atual: " + A.streak + " dias na linha. Repetir vale mais que acertar.";
+    l1 = "Queda de " + n0(-d) + "%. Sequência atual: " + A.streak + " dias na sua própria linha.";
   } else {
-    l1 = ironico ? n0(-d) + "% abaixo da semana passada. Guarde este número: você acabou de provar que dá." : "Queda de " + n0(-d) + "%.";
-    l2 = "Nesse ritmo a projeção de 4 semanas é " + n1(A.proj28) + " g/dia. O risco agora é comemorar cedo.";
+    l1 = "Queda de " + n0(-d) + "%. Projeção de 4 semanas: " + n1(A.proj28) + " g/dia.";
   }
+  l2 = (typeof MSGS !== "undefined") ? frase("v:" + [estado.semDados, estado.poucosDados, estado.diaPesado, estado.streak >= 5, d === null ? "n" : Math.round(d / 6)].join("|"), function () { return MSGS.paraEstado(estado); }) : "";
   q("#vL1").textContent = l1;
   q("#vL2").textContent = l2;
   var vd = q("#vDelta");
@@ -600,6 +649,55 @@ function renderCalendario(A, sel) {
 }
 
 /* --------------------------- sequência / marcos --------------------------- */
+function renderRota(A) {
+  var etapas = [10, 25, 50, 75, 100];
+  var wrap = q("#rotaEtapas");
+  wrap.innerHTML = "";
+
+  if (A.completos.length < 7) {
+    q("#rotaProgresso").textContent = "—";
+    q("#rotaFase").textContent = "Construindo sua linha de base";
+    q("#rotaBar").style.width = Math.min(100, A.completos.length / 7 * 100) + "%";
+    etapas.forEach(function (e) { wrap.appendChild(el("span", "route-step", e === 100 ? "zero" : "−" + e + "%")); });
+    q("#rotaMensagem").textContent = "Primeiro medimos com honestidade. A direção será reduzir de forma sustentável até não precisar mais registrar.";
+    q("#rotaProximo").textContent = "Linha de base: faltam " + (7 - A.completos.length) + " dia(s) completo(s).";
+    return;
+  }
+
+  var base = somaG(A.completos.slice(0, 7)) / 7;
+  var atuais = A.completos.slice(-7);
+  var atual = somaG(atuais) / 7;
+  var semanaZero = atuais.length === 7 && somaG(atuais) <= 0.001;
+  var progresso = base > 0 ? (base - atual) / base * 100 : 0;
+  progresso = semanaZero ? 100 : Math.max(0, Math.min(99, progresso));
+  var proxima = etapas.find(function (e) { return progresso + 0.001 < e; }) || 100;
+
+  q("#rotaProgresso").textContent = n0(progresso) + "%";
+  q("#rotaFase").textContent = "redução desde a primeira semana completa";
+  q("#rotaBar").style.width = progresso + "%";
+  etapas.forEach(function (e) {
+    wrap.appendChild(el("span", "route-step" + (progresso + 0.001 >= e ? " done" : ""), e === 100 ? "zero" : "−" + e + "%"));
+  });
+
+  var mensagem;
+  if (semanaZero) mensagem = "Sete dias em zero: a eliminação deixou de ser ideia e virou evidência. Proteja o que tornou essa semana possível.";
+  else if (progresso >= 75) mensagem = "A maior parte do caminho já apareceu nos dados. Agora feche as últimas janelas automáticas, sem pressa e sem perder a direção.";
+  else if (progresso >= 50) mensagem = "Metade do caminho foi construída por decisões repetidas. Continue removendo uma situação de consumo por vez.";
+  else if (progresso >= 25) mensagem = "A direção está firme. Uma redução que se sustenta vale mais que um corte grande que volta na semana seguinte.";
+  else if (progresso >= 10) mensagem = "A queda já é mensurável. Repita o que funcionou antes de apertar mais a meta.";
+  else if (atual > base) mensagem = "A média recente está acima da linha de base. Isso não apaga o plano; mostra que a próxima ação precisa ser mais específica.";
+  else mensagem = "A linha começou a ceder. O objetivo não é uma semana perfeita, e sim manter a direção até zero.";
+  q("#rotaMensagem").textContent = mensagem;
+
+  if (semanaZero) {
+    q("#rotaProximo").textContent = "Marco atual: sustentar o zero e reconhecer antecipadamente situações de retorno.";
+  } else {
+    var alvo = proxima === 100 ? 0 : base * (1 - proxima / 100);
+    var falta = Math.max(0, atual - alvo);
+    q("#rotaProximo").textContent = "Próximo marco: " + (proxima === 100 ? "7 dias em zero" : "−" + proxima + "%") + ". Falta reduzir cerca de " + n1(falta) + " g/dia em relação à média atual.";
+  }
+}
+
 function renderSequencia(A) {
   var st = q("#streak");
   st.textContent = String(A.streak);
@@ -644,10 +742,16 @@ function renderMarcos(A) {
     if (d.tipo !== "off" && d.hPrim !== null && (tardeMax === null || d.hPrim > tardeMax)) tardeMax = d.hPrim;
   });
   var alvoOff = A.baseTipo.off * 0.7;
+  var diasOff = A.completos.filter(function (d) { return d.tipo === "off" && d.n > 0; });
+  var melhorOff = diasOff.length ? Math.min.apply(null, diasOff.map(function (d) { return d.g; })) : null;
+  var progOff = (melhorOff !== null && A.baseTipo.off > alvoOff) ? (A.baseTipo.off - melhorOff) / (A.baseTipo.off - alvoOff) : 0;
+  var temZero = A.completos.some(function (d) { return d.n === 0; });
+  var rotOff = A.baseTipo.off > 0 ? "Um dia off abaixo de " + n1(alvoOff) + " g" : "Um dia off 30% abaixo da própria linha";
   var lista = [
     { n: "7 dias seguidos na linha", feito: A.streak >= 7, prog: A.streak / 7 },
     { n: "Uma semana " + n0(pct) + "% abaixo da anterior", feito: A.delta !== null && A.delta <= -pct, prog: A.delta === null ? 0 : Math.max(0, -A.delta / pct) },
-    { n: "Um dia off abaixo de " + n1(alvoOff) + " g", feito: A.completos.some(function (d) { return d.tipo === "off" && d.n > 0 && d.g <= alvoOff; }), prog: 1 },
+    { n: "Um dia inteiro em zero", feito: temZero, prog: temZero ? 1 : 0 },
+    { n: rotOff, feito: melhorOff !== null && melhorOff <= alvoOff, prog: Math.max(0, progOff) },
     { n: "Primeiro uso depois das 18h num dia útil", feito: tardeMax !== null && tardeMax >= 18, prog: tardeMax === null ? 0 : Math.max(0, (tardeMax - 12) / 6) },
     { n: "Intervalo médio acima de 3h", feito: A.gapAtual !== null && A.gapAtual >= 180, prog: A.gapAtual === null ? 0 : A.gapAtual / 180 }
   ];
@@ -690,7 +794,7 @@ function renderDia(A, sel) {
 
   var wrap = q("#regsDia"); wrap.innerHTML = "";
   if (!d.regs.length) {
-    var e = el("div", "hint", "Nenhum registro neste dia. Essa linha em branco vale mais que qualquer troféu.");
+    var e = el("div", "hint", (typeof MSGS !== "undefined") ? frase("d:" + sel, function () { return MSGS.escolher("dia_limpo"); }) : "Nenhum registro neste dia.");
     e.style.cssText += ";padding:16px 4px;font-style:italic";
     wrap.appendChild(e);
     return;
@@ -700,8 +804,58 @@ function renderDia(A, sel) {
     var gap = idx > 0 ? (r.ts - d.regs[idx - 1].ts) / 60000 : null;
     var dt = new Date(r.ts);
     var row = el("div", "tbl-r");
-    row.appendChild(el("span", "h", pad2(dt.getHours()) + ":" + pad2(dt.getMinutes())));
-    row.appendChild(el("span", "q hide", n1(r.q)));
+
+    function reordenarESalvar() { S.regs.sort(function (a, b) { return a.ts - b.ts; }); salvar(); render(); }
+
+    var dataWrap = el("div"); dataWrap.style.cssText = "display:flex;align-items:center;gap:2px";
+    var diaSel = el("select"); diaSel.className = "mono ed"; diaSel.style.width = "32px";
+    for (var dd0 = 1; dd0 <= 31; dd0++) { var od0 = el("option", null, pad2(dd0)); od0.value = dd0; if (dd0 === dt.getDate()) od0.selected = true; diaSel.appendChild(od0); }
+    var mesSel = el("select"); mesSel.className = "mono ed"; mesSel.style.width = "32px";
+    for (var mn0 = 1; mn0 <= 12; mn0++) { var om0 = el("option", null, pad2(mn0)); om0.value = mn0; if (mn0 === dt.getMonth() + 1) om0.selected = true; mesSel.appendChild(om0); }
+    var anoSel = el("select"); anoSel.className = "mono ed"; anoSel.style.width = "48px";
+    var anoBase = dt.getFullYear();
+    for (var ay0 = anoBase - 2; ay0 <= anoBase + 2; ay0++) { var oy0 = el("option", null, String(ay0)); oy0.value = ay0; if (ay0 === anoBase) oy0.selected = true; anoSel.appendChild(oy0); }
+    function aplicarData() {
+      var atual = new Date(r.ts);
+      r.ts = new Date(parseInt(anoSel.value, 10), parseInt(mesSel.value, 10) - 1, parseInt(diaSel.value, 10), atual.getHours(), atual.getMinutes(), 0, 0).getTime();
+      reordenarESalvar();
+    }
+    diaSel.addEventListener("change", aplicarData);
+    mesSel.addEventListener("change", aplicarData);
+    anoSel.addEventListener("change", aplicarData);
+    dataWrap.appendChild(diaSel);
+    dataWrap.appendChild(el("span", "muted", "/"));
+    dataWrap.appendChild(mesSel);
+    dataWrap.appendChild(el("span", "muted", "/"));
+    dataWrap.appendChild(anoSel);
+    row.appendChild(dataWrap);
+
+    var horaWrap = el("div"); horaWrap.style.cssText = "display:flex;align-items:center;gap:2px";
+    var hSel = el("select"); hSel.className = "mono ed"; hSel.style.width = "34px";
+    for (var hh2 = 0; hh2 < 24; hh2++) { var oh = el("option", null, pad2(hh2)); oh.value = hh2; if (hh2 === dt.getHours()) oh.selected = true; hSel.appendChild(oh); }
+    var mSel = el("select"); mSel.className = "mono ed"; mSel.style.width = "34px";
+    for (var mm2 = 0; mm2 < 60; mm2++) { var om = el("option", null, pad2(mm2)); om.value = mm2; if (mm2 === dt.getMinutes()) om.selected = true; mSel.appendChild(om); }
+    function aplicarHora() {
+      var atual = new Date(r.ts);
+      r.ts = new Date(atual.getFullYear(), atual.getMonth(), atual.getDate(), parseInt(hSel.value, 10), parseInt(mSel.value, 10), 0, 0).getTime();
+      reordenarESalvar();
+    }
+    hSel.addEventListener("change", aplicarHora);
+    mSel.addEventListener("change", aplicarHora);
+    horaWrap.appendChild(hSel);
+    horaWrap.appendChild(el("span", "muted", ":"));
+    horaWrap.appendChild(mSel);
+    row.appendChild(horaWrap);
+
+    var qtdIn = el("input"); qtdIn.type = "text"; qtdIn.className = "mono ed";
+    qtdIn.value = n1(r.q);
+    qtdIn.addEventListener("change", function () {
+      var v = parseFloat(String(this.value).replace(",", "."));
+      if (isNaN(v) || v <= 0) { this.value = n1(r.q); return; }
+      r.q = v; salvar(); render();
+    });
+    row.appendChild(qtdIn);
+
     row.appendChild(el("span", "g" + (gap !== null && gap < 60 ? " tight" : ""), gap === null ? "—" : hm(gap)));
     var acts = el("div"); acts.style.cssText = "display:flex;align-items:center;gap:10px;min-width:0";
     var sel2 = el("select");
@@ -715,10 +869,11 @@ function renderDia(A, sel) {
       r.gatilho = this.value; salvar(); render();
     });
     acts.appendChild(sel2);
-    var edit = el("button", "btn link", "editar");
-    edit.type = "button";
-    edit.addEventListener("click", function () { abrirEdicao(r.id); });
-    acts.appendChild(edit);
+    var notaIn = el("input"); notaIn.type = "text"; notaIn.placeholder = "Nota (opcional)";
+    notaIn.value = r.nota || "";
+    notaIn.style.cssText = "flex:1;min-width:0;padding:5px 9px;font-size:12.5px;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:8px";
+    notaIn.addEventListener("change", function () { r.nota = this.value; salvar(); });
+    acts.appendChild(notaIn);
     var del = el("button", "btn link", "apagar");
     del.type = "button";
     del.addEventListener("click", function () {
@@ -732,12 +887,10 @@ function renderDia(A, sel) {
 }
 
 /* ============================== formulário ============================== */
-function popularSelectHora(hh, mm) {
+function popularHoras() {
+  var hh = q("#hh"), mm = q("#mm");
   for (var h = 0; h < 24; h++) { var o = el("option", null, pad2(h)); o.value = h; hh.appendChild(o); }
   for (var m = 0; m < 60; m++) { var o2 = el("option", null, pad2(m)); o2.value = m; mm.appendChild(o2); }
-}
-function popularHoras() {
-  popularSelectHora(q("#hh"), q("#mm"));
   agora();
 }
 function agora() {
@@ -768,7 +921,7 @@ function registrar() {
   var hh = parseInt(q("#hh").value, 10), mm = parseInt(q("#mm").value, 10);
   // hora antes das 04h pertence ao dia lógico anterior -> cai no dia seguinte do calendário
   var dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + (hh < H0 ? 1 : 0), hh, mm, 0, 0);
-  S.regs.push({ id: "r" + dt.getTime() + "-" + Math.random().toString(36).slice(2, 7), ts: dt.getTime(), q: v, gatilho: "" });
+  S.regs.push({ id: "r" + dt.getTime() + "-" + Math.random().toString(36).slice(2, 7), ts: dt.getTime(), q: v, gatilho: "", nota: "" });
   S.regs.sort(function (a, b) { return a.ts - b.ts; });
   q("#qtd").value = "";
   salvar(); agora(); renderChips(); render();
@@ -777,49 +930,6 @@ function registrar() {
   setTimeout(function () { st.textContent = ""; }, 2200);
   q("#qtd").focus();
 }
-
-/* ------------------------- edição de registro existente ------------------------- */
-var editId = null;
-function abrirEdicao(id) {
-  var r = S.regs.find(function (x) { return x.id === id; });
-  if (!r) return;
-  editId = id;
-  var dt = new Date(r.ts);
-  var hh = q("#editHH"), mm = q("#editMM");
-  hh.innerHTML = ""; mm.innerHTML = "";
-  popularSelectHora(hh, mm);
-  hh.value = dt.getHours(); mm.value = dt.getMinutes();
-  q("#editData").value = dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
-  q("#editQtd").value = n1(r.q);
-  q("#editModal").style.display = "flex";
-  q("#editQtd").focus();
-  q("#editQtd").select();
-}
-function fecharEdicao() {
-  q("#editModal").style.display = "none";
-  editId = null;
-}
-function salvarEdicao() {
-  if (editId === null) return;
-  var r = S.regs.find(function (x) { return x.id === editId; });
-  if (!r) { fecharEdicao(); return; }
-  var v = parseFloat(String(q("#editQtd").value).replace(",", "."));
-  if (isNaN(v) || v <= 0) { alert("Quantidade inválida."); return; }
-  var partes = q("#editData").value.split("-").map(Number);
-  if (partes.length !== 3 || partes.some(isNaN)) { alert("Data inválida."); return; }
-  var hh = parseInt(q("#editHH").value, 10), mm = parseInt(q("#editMM").value, 10);
-  r.q = v;
-  r.ts = new Date(partes[0], partes[1] - 1, partes[2], hh, mm, 0, 0).getTime();
-  S.regs.sort(function (a, b) { return a.ts - b.ts; });
-  S.sel = chaveLogica(r.ts);
-  salvar(); renderChips(); render();
-  fecharEdicao();
-}
-q("#editSaveBtn").addEventListener("click", salvarEdicao);
-q("#editCancelBtn").addEventListener("click", fecharEdicao);
-q("#editQtd").addEventListener("keyup", function (e) { if (e.key === "Enter") salvarEdicao(); });
-q("#editModal").addEventListener("click", function (e) { if (e.target === q("#editModal")) fecharEdicao(); });
-document.addEventListener("keydown", function (e) { if (e.key === "Escape" && editId !== null) fecharEdicao(); });
 
 /* ============================ backup / import ============================ */
 function baixar(nome, conteudo, mime) {
@@ -840,10 +950,10 @@ function exportarJson() {
   }, null, 2), "application/json");
 }
 function exportarCsv() {
-  var linhas = ["Data,Hora,Quantidade,Motivo,TipoDia"];
+  var linhas = ["Data,Hora,Quantidade,Motivo,Nota,TipoDia"];
   serializar().forEach(function (r) {
     var k = chaveLogica(r.timestamp);
-    linhas.push([r.data, r.hora, r.quantidade, r.gatilho || "", TIPOS[tipoDe(k)].nome].map(csvEsc).join(","));
+    linhas.push([r.data, r.hora, r.quantidade, r.gatilho || "", r.nota || "", TIPOS[tipoDe(k)].nome].map(csvEsc).join(","));
   });
   baixar("backup_registros.csv", linhas.join("\n"), "text/csv;charset=utf-8");
 }
@@ -882,7 +992,7 @@ function importar(texto, nome) {
       var h = parseInt(hp[0], 10), mi = parseInt(hp[1], 10);
       if (isNaN(h) || h < 0 || h > 23 || isNaN(mi) || mi < 0 || mi > 59) return;
       var dt = new Date(parseInt(dp[2], 10), parseInt(dp[1], 10) - 1, parseInt(dp[0], 10), h, mi, 0, 0);
-      novos.push({ timestamp: dt.getTime(), quantidade: parseFloat(p[2]) || 0, gatilho: (p[3] || "").trim() });
+      novos.push({ timestamp: dt.getTime(), quantidade: parseFloat(p[2]) || 0, gatilho: (p[3] || "").trim(), nota: (p[4] || "").trim() });
     });
   }
   if (!novos.length) { q("#impStatus").textContent = "Nenhum registro encontrado no arquivo."; return; }
@@ -914,8 +1024,6 @@ function aplicarConfigUI() {
   q("#cfgJanela").value = String(S.cfg.janela);
   q("#cfgMeta").value = String(S.cfg.meta);
   q("#cfgTema").value = S.cfg.tema;
-  q("#cfgTom").classList.toggle("on", !!S.cfg.tom);
-  q("#cfgDiscreto").classList.toggle("on", !!S.cfg.discreto);
   aplicarTema();
 }
 
@@ -933,8 +1041,6 @@ q("#filtroHora").addEventListener("click", function (e) {
 q("#cfgJanela").addEventListener("change", function () { S.cfg.janela = parseInt(this.value, 10); salvarConfig(); render(); });
 q("#cfgMeta").addEventListener("change", function () { S.cfg.meta = parseInt(this.value, 10); salvarConfig(); render(); });
 q("#cfgTema").addEventListener("change", function () { S.cfg.tema = this.value; salvarConfig(); aplicarTema(); });
-q("#cfgTom").addEventListener("click", function () { S.cfg.tom = !S.cfg.tom; salvarConfig(); aplicarConfigUI(); render(); });
-q("#cfgDiscreto").addEventListener("click", function () { S.cfg.discreto = !S.cfg.discreto; salvarConfig(); aplicarConfigUI(); render(); });
 q("#expJson").addEventListener("click", exportarJson);
 q("#expCsv").addEventListener("click", exportarCsv);
 q("#impBtn").addEventListener("click", function () { q("#file").click(); });
