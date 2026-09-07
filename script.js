@@ -9,7 +9,9 @@
    - Nenhum ranking mensal, nenhum troféu que reinicia.
    ========================================================================= */
 
-var H0 = 4;
+/* Regras de dia lógico e tipo de dia moram em dia.js (compartilhado com o
+   popup), para o painel e o registro rápido usarem a mesma referência. */
+var H0 = window.RA_DIA.H0;
 
 /* Fora da extensão (abrindo o arquivo direto no navegador) não existe
    chrome.storage; um espelho em localStorage mantém a página funcional. */
@@ -35,9 +37,9 @@ if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
 }
 
 var TIPOS = {
-  home:   { nome: "Home office", cor: "var(--blue)",   classe: "b-home" },
-  office: { nome: "Escritório",  cor: "var(--violet)", classe: "b-office" },
-  off:    { nome: "Dia off",     cor: "var(--warn)",   classe: "b-off" }
+  home:   { nome: window.RA_DIA.NOMES.home,   cor: "var(--blue)",   classe: "b-home" },
+  office: { nome: window.RA_DIA.NOMES.office, cor: "var(--violet)", classe: "b-office" },
+  off:    { nome: window.RA_DIA.NOMES.off,    cor: "var(--warn)",   classe: "b-off" }
 };
 var GAT = ["", "tédio", "ansiedade", "social", "ritual", "hábito"];
 var DIAS_SEM = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -50,12 +52,7 @@ function hm(min) {
   var m = Math.max(0, Math.round(min)), h = Math.floor(m / 60);
   return h > 0 ? h + "h" + String(m % 60).padStart(2, "0") : m + "min";
 }
-function mediana(a) {
-  if (!a.length) return 0;
-  var s = a.slice().sort(function (x, y) { return x - y; });
-  var i = Math.floor(s.length / 2);
-  return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
-}
+function mediana(a) { return window.RA_DIA.mediana(a); }
 function media(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : 0; }
 function pad2(v) { return String(v).padStart(2, "0"); }
 function el(tag, cls, txt) {
@@ -78,18 +75,10 @@ var S = {
 };
 
 /* ------------------------- dia lógico (04h) ------------------------- */
-function chaveLogica(ts) {
-  var d = new Date(ts - H0 * 3600000);
-  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-}
-function chaveDe(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
-function chaveParaData(k) { var p = k.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
-function tipoDe(k) {
-  if (S.tipos[k]) return S.tipos[k];
-  var wd = chaveParaData(k).getDay();
-  if (wd === 0 || wd === 6) return "off";
-  return (wd === 2 || wd === 4) ? "office" : "home";
-}
+function chaveLogica(ts) { return window.RA_DIA.chaveLogica(ts); }
+function chaveDe(d) { return window.RA_DIA.chaveDe(d); }
+function chaveParaData(k) { return window.RA_DIA.chaveParaData(k); }
+function tipoDe(k) { return window.RA_DIA.tipoDe(k, S.tipos); }
 function rotuloCurto(k) { var d = chaveParaData(k); return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1); }
 function rotuloLongo(k) { var d = chaveParaData(k); return DIAS_SEM[d.getDay()] + ", " + d.getDate() + " de " + MESES[d.getMonth()].toLowerCase(); }
 function hoje() { return chaveLogica(Date.now()); }
@@ -135,10 +124,18 @@ function carregar() {
    gravação daqui (o bug crítico da versão anterior). */
 if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener(function (ch, area) {
-    if (area !== "local" || !ch.registros) return;
-    if (ch.registros.newValue === S.escritaPropria) return; // gravação desta página
-    try { S.regs = ch.registros.newValue ? normalizar(JSON.parse(ch.registros.newValue)) : []; } catch (e) { return; }
-    render();
+    if (area !== "local") return;
+    if (ch.registros && ch.registros.newValue === S.escritaPropria) return; // gravação desta página
+    var mudou = false;
+    if (ch.registros) {
+      try { S.regs = ch.registros.newValue ? normalizar(JSON.parse(ch.registros.newValue)) : []; mudou = true; } catch (e) {}
+    }
+    /* O popup também classifica o dia (home office / escritório / off) para
+       comparar com a linha certa; sem isto o painel ficaria defasado. */
+    if (ch.tiposDia) {
+      try { S.tipos = ch.tiposDia.newValue ? JSON.parse(ch.tiposDia.newValue) : {}; mudou = true; } catch (e) {}
+    }
+    if (mudou) render();
   });
 }
 
