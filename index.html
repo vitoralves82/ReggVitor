@@ -7,8 +7,9 @@
 <style>
   /* ================= tokens ================= */
   :root {
-    --bg:#0a1120; --surface:#121b2c; --surface-2:#0e1626; --surface-3:#1a2540;
-    --border:#26334a; --border-strong:#35435e;
+    --bg:#080e19; --surface:#16223a; --surface-2:#233152; --surface-3:#354a72;
+    --input:#1c2945; --shadow:0 14px 34px rgba(0,0,0,.16);
+    --border:#3d5175; --border-strong:#4d6796;
     --text:#e8eef7; --muted:#8fa0b8; --muted-2:#5d6f8a; --soft:#a9b7ca;
     --accent:#10b981; --accent-2:#34d399; --accent-3:#6ee7b7; --accent-ink:#052e1c;
     --danger:#f87171; --warn:#fbbf24; --blue:#60a5fa; --violet:#a78bfa;
@@ -24,30 +25,32 @@
     --mono:ui-monospace,SFMono-Regular,'Cascadia Mono','Segoe UI Mono',Menlo,Consolas,monospace;
   }
   :root[data-theme="light"] {
-    --bg:#eff3f8; --surface:#ffffff; --surface-2:#f6f9fc; --surface-3:#eaf0f7;
-    --border:#dbe3ee; --border-strong:#c3cfdf;
-    --text:#111a2b; --muted:#5b6b82; --muted-2:#8494a8; --soft:#3d4d63;
+    --bg:#dfe7f1; --surface:#f8fafc; --surface-2:#e9f0f7; --surface-3:#d6e0eb;
+    --input:#ffffff; --shadow:0 10px 28px rgba(30,55,85,.09);
+    --border:#b9c7d8; --border-strong:#7b8fa7;
+    --text:#0f172a; --muted:#475569; --muted-2:#60718a; --soft:#334155;
     --accent:#059669; --accent-2:#047857; --accent-3:#0f766e; --accent-ink:#ffffff;
     --danger:#dc2626; --warn:#b45309; --blue:#2563eb; --violet:#7c3aed;
     --bar-zero:#bbf7d0; --hb-lo:#a7f3d0;
     --good-bg:#e7f9f0; --good-bd:#a7f3d0; --good-fg:#047857;
     --ok-bg:#f0fbf5;  --ok-bd:#c9eedd;  --ok-fg:#059669;
-    --line-bg:#f6f9fc; --line-bd:#dbe3ee; --line-fg:#111a2b;
+    --line-bg:#e9f0f7; --line-bd:#b9c7d8; --line-fg:#0f172a;
     --up-bg:#fdf6e7;  --up-bd:#f2dfae;  --up-fg:#b45309;
     --bad-bg:#fdecec; --bad-bd:#f6c9c9; --bad-fg:#b91c1c;
     --sel-bg:#e8eefb;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme]) {
-      --bg:#eff3f8; --surface:#ffffff; --surface-2:#f6f9fc; --surface-3:#eaf0f7;
-      --border:#dbe3ee; --border-strong:#c3cfdf;
-      --text:#111a2b; --muted:#5b6b82; --muted-2:#8494a8; --soft:#3d4d63;
+      --bg:#dfe7f1; --surface:#f8fafc; --surface-2:#e9f0f7; --surface-3:#d6e0eb;
+      --input:#ffffff; --shadow:0 10px 28px rgba(30,55,85,.09);
+      --border:#b9c7d8; --border-strong:#7b8fa7;
+      --text:#0f172a; --muted:#475569; --muted-2:#60718a; --soft:#334155;
       --accent:#059669; --accent-2:#047857; --accent-3:#0f766e; --accent-ink:#ffffff;
       --danger:#dc2626; --warn:#b45309; --blue:#2563eb; --violet:#7c3aed;
       --bar-zero:#bbf7d0; --hb-lo:#a7f3d0;
       --good-bg:#e7f9f0; --good-bd:#a7f3d0; --good-fg:#047857;
       --ok-bg:#f0fbf5; --ok-bd:#c9eedd; --ok-fg:#059669;
-      --line-bg:#f6f9fc; --line-bd:#dbe3ee; --line-fg:#111a2b;
+      --line-bg:#e9f0f7; --line-bd:#b9c7d8; --line-fg:#0f172a;
       --up-bg:#fdf6e7; --up-bd:#f2dfae; --up-fg:#b45309;
       --bad-bg:#fdecec; --bad-bd:#f6c9c9; --bad-fg:#b91c1c;
       --sel-bg:#e8eefb;
@@ -61,7 +64,7 @@
   h1 { font-size:20px; } h2 { font-size:16px; }
   .mono { font-family:var(--mono); }
   .muted { color:var(--muted); }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:17px 19px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:17px 19px; box-shadow:var(--shadow); }
   .lbl { font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
   .sub { color:var(--muted); font-weight:500; font-size:13px; }
   .hint { font-size:12.5px; color:var(--muted); text-wrap:pretty; }
@@ -77,7 +80,7 @@
   /* controls */
   .bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
   .ctl { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
-  select, input[type="text"] { font-family:var(--sans); font-size:13px; color:var(--text); background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; padding:6px 9px; }
+  select, input[type="text"] { font-family:var(--sans); font-size:13px; color:var(--text); background:var(--input); border:1px solid var(--border-strong); border-radius:8px; padding:6px 9px; }
   select { cursor:pointer; }
   input[type="text"]:focus, select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
   .btn { border:1px solid var(--border-strong); background:var(--surface-2); color:var(--soft); border-radius:8px; padding:6px 13px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:var(--sans); white-space:nowrap; }
@@ -120,6 +123,20 @@
   .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--muted); }
   .legend span.i { display:inline-flex; align-items:center; gap:6px; }
   .legend em { width:11px; height:11px; border-radius:3px; flex:none; }
+  .chart-read { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:15px; padding-top:14px; border-top:1px solid var(--border); }
+  .chart-read div { color:var(--muted); font-size:12px; line-height:1.45; }
+  .chart-read strong { display:block; color:var(--text); font-size:12.5px; margin-bottom:2px; }
+
+  /* orientação prática */
+  .guide-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .guide-step { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:13px 14px; display:flex; gap:11px; }
+  .guide-step .num { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; flex:none; background:var(--accent); color:var(--accent-ink); font-family:var(--mono); font-size:11px; font-weight:700; }
+  .guide-step strong { display:block; font-size:13px; margin-bottom:3px; }
+  .guide-step p { margin:0; color:var(--muted); font-size:12px; line-height:1.45; }
+  .next-action { background:var(--good-bg); border:1px solid var(--good-bd); border-radius:12px; padding:12px 14px; display:grid; grid-template-columns:auto minmax(0,1fr); gap:2px 12px; align-items:center; }
+  .next-action .lbl { color:var(--good-fg); grid-row:1 / span 2; }
+  .next-action strong { font-size:13px; color:var(--text); }
+  .next-action span:last-child { color:var(--muted); font-size:12px; }
 
   /* duas colunas */
   .g2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:13px; }
@@ -177,32 +194,43 @@
   .ms { display:flex; flex-direction:column; gap:7px; }
   .ms .track { height:5px; }
   .streak { font-family:var(--mono); font-size:40px; font-weight:600; letter-spacing:-.03em; line-height:1; }
+  .route-head { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; }
+  .route-progress { font-family:var(--mono); font-size:34px; line-height:1; font-weight:700; color:var(--accent-2); }
+  .route-track { height:9px; background:var(--surface-3); }
+  .route-steps { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+  .route-step { text-align:center; font-family:var(--mono); font-size:9.5px; color:var(--muted-2); padding-top:2px; }
+  .route-step.done { color:var(--accent-2); font-weight:700; }
+  .route-message { color:var(--soft); font-size:13px; line-height:1.45; padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 9px 9px 0; }
+  .route-next { color:var(--muted); font-size:12px; line-height:1.45; }
 
   /* registros do dia */
-  .tbl-h, .tbl-r { display:grid; grid-template-columns:70px 92px 132px minmax(0,1fr); gap:10px; align-items:center; }
+  .tbl-h, .tbl-r { display:grid; grid-template-columns:132px 96px 76px 108px minmax(0,1fr); gap:10px; align-items:center; }
   .tbl-h { padding:0 4px 8px; border-bottom:1px solid var(--border); }
-  .tbl-r { padding:9px 4px; border-bottom:1px solid var(--surface-3); }
-  .tbl-r .h, .tbl-r .q, .tbl-r .g { font-family:var(--mono); font-size:13.5px; }
-  .tbl-r .q { font-weight:600; }
-  .tbl-r .g { font-size:13px; color:var(--soft); }
+  .tbl-r { padding:6px 4px; border-bottom:1px solid var(--surface-3); }
+  .tbl-r .g { font-family:var(--mono); font-size:13px; color:var(--soft); }
   .tbl-r .g.tight { color:var(--danger); }
+  .tbl-r input.ed, .tbl-r select.ed {
+    font-family:var(--mono); font-size:13px; color:var(--text); background:transparent;
+    border:1px solid transparent; border-radius:6px; padding:5px 6px; width:100%; min-width:0;
+  }
+  .tbl-r select.ed { -webkit-appearance:none; appearance:none; text-align:center; padding:5px 3px; }
+  .tbl-r input.ed:hover, .tbl-r select.ed:hover { border-color:var(--border-strong); background:var(--surface-3); }
+  .tbl-r input.ed:focus, .tbl-r select.ed:focus {
+    outline:none; border-color:var(--accent); background:var(--surface-3);
+  }
+  .tbl-r input.ed { font-weight:600; }
   .form { display:flex; flex-wrap:wrap; align-items:flex-end; gap:11px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .table-help { color:var(--muted); font-size:12px; line-height:1.45; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; }
   .form .f { display:flex; flex-direction:column; gap:5px; }
   .chip { border:1px solid var(--border-strong); background:var(--surface); color:var(--soft); border-radius:999px; padding:8px 13px; font-size:12.5px; font-weight:600; font-family:var(--mono); cursor:pointer; }
   .chip:hover { background:var(--surface-3); color:var(--text); }
   #status { font-size:12.5px; font-weight:600; color:var(--accent-2); align-self:center; }
-  .discreto .hide { filter:blur(6px); }
   .foot { font-size:11.5px; color:var(--muted-2); text-align:center; padding-top:4px; }
-  @media (max-width:980px) { .app { padding:16px 14px 48px; } .calrow { grid-template-columns:minmax(0,1fr) !important; } }
-
-  /* modal de edição */
-  .modal-overlay { position:fixed; inset:0; z-index:60; background:rgba(4,8,16,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
-  .modal-overlay.open { display:flex; }
-  .modal { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:0 20px 60px rgba(0,0,0,.4); padding:20px 22px; width:100%; max-width:340px; display:flex; flex-direction:column; gap:4px; }
-  .modal h3 { font-size:16px; margin-bottom:4px; }
-  .modal .f { display:flex; flex-direction:column; gap:5px; margin-top:12px; }
-  .modal input[type="text"], .modal input[type="date"] { width:100%; padding:9px 12px; font-size:14px; }
-  .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+  details > summary::-webkit-details-marker { display:none; }
+  details > summary::marker { content:""; }
+  .chev { color:var(--muted); font-size:12px; flex:none; transition:transform .15s ease; }
+  details[open] .chev { transform:rotate(90deg); }
+  @media (max-width:980px) { .app { padding:16px 14px 48px; } .calrow { grid-template-columns:minmax(0,1fr) !important; } .guide-grid,.chart-read { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -227,116 +255,10 @@
       <label class="ctl">Tema
         <select id="cfgTema"><option value="dark">Escuro</option><option value="light">Claro</option><option value="auto">Auto</option></select>
       </label>
-      <button class="btn pill" id="cfgTom" type="button">Tom irônico</button>
-      <button class="btn pill" id="cfgDiscreto" type="button">Modo discreto</button>
     </div>
   </div>
 
-  <div class="card verdict">
-    <div class="txt">
-      <div class="l1" id="vL1">Carregando…</div>
-      <div class="l2" id="vL2"></div>
-    </div>
-    <div style="display:flex;align-items:baseline;gap:8px">
-      <span class="big hide" id="vDelta">—</span>
-      <span class="cap">vs. os 7 dias anteriores</span>
-    </div>
-  </div>
-
-  <div class="kpis" id="kpis"></div>
-
-  <div class="card">
-    <div class="bar" style="justify-content:space-between;margin-bottom:15px">
-      <h2>Evolução <span class="sub">média de 7 dias vs. trajetória da meta</span></h2>
-      <div class="legend" id="chartLegend"></div>
-    </div>
-    <div class="chart-wrap">
-      <div class="yax"><span id="yMax">—</span><span id="yMid">—</span><span>0</span></div>
-      <div style="flex:1;min-width:0">
-        <div class="plot" id="plot">
-          <div class="grid" style="top:0"></div>
-          <div class="grid" style="top:50%"></div>
-          <div class="bars" id="bars"></div>
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-            <polyline id="lineMeta" fill="none" stroke="var(--accent-2)" stroke-width="1.5" stroke-dasharray="5 4" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
-            <polyline id="lineMedia" fill="none" stroke="var(--line-fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
-          </svg>
-        </div>
-        <div class="xax" id="xax"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="g2">
-    <div class="card stack">
-      <div class="bar" style="justify-content:space-between">
-        <h2>Onde o peso está</h2><span class="sub">mediana por tipo de dia</span>
-      </div>
-      <div class="stack" id="porTipo"></div>
-      <div class="rule"></div>
-      <div class="lbl">Gatilhos declarados</div>
-      <div class="stack" id="porGatilho"></div>
-    </div>
-
-    <div class="card stack">
-      <div class="bar" style="justify-content:space-between">
-        <h2>Quando <span class="sub">dia começa às 04h</span></h2>
-        <div class="bar" style="gap:5px" id="filtroHora">
-          <button class="btn pill on" data-f="todos" type="button">Todos</button>
-          <button class="btn pill" data-f="uteis" type="button">Úteis</button>
-          <button class="btn pill" data-f="off" type="button">Off</button>
-        </div>
-      </div>
-      <div class="hbars" id="hbars"></div>
-      <div class="xax" id="hax"></div>
-      <div class="hint" style="border-top:1px solid var(--border);padding-top:11px" id="notaHoras"></div>
-    </div>
-  </div>
-
-  <div class="card stack">
-    <h2>Alavancas <span class="sub">o que os seus próprios dados dizem que funciona</span></h2>
-    <div class="g3" id="alavancas"></div>
-  </div>
-
-  <div class="g2 calrow" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">
-    <div class="card stack">
-      <div class="bar" style="justify-content:space-between">
-        <h2 id="tituloMes">—</h2>
-        <div class="bar" style="gap:6px">
-          <button class="btn" id="mesPrev" type="button">‹</button>
-          <button class="btn" id="mesNext" type="button">›</button>
-        </div>
-      </div>
-      <div class="hint">Cor comparada com a <strong>sua mediana daquele tipo de dia</strong> — um sábado de 8 g é verde, uma terça de 4 g é vermelha.</div>
-      <div class="calgrid" id="cal"></div>
-      <div class="legend" style="border-top:1px solid var(--border);padding-top:11px">
-        <span class="i"><em style="background:var(--good-bd)"></em>bem abaixo da sua linha</span>
-        <span class="i"><em style="background:var(--line-bd)"></em>na linha</span>
-        <span class="i"><em style="background:var(--up-bd)"></em>acima</span>
-        <span class="i"><em style="background:var(--bad-bd)"></em>muito acima</span>
-      </div>
-    </div>
-
-    <div class="stack">
-      <div class="card stack">
-        <h2>Sequência</h2>
-        <div style="display:flex;align-items:baseline;gap:10px">
-          <span class="streak" id="streak">0</span>
-          <span class="hint">dias seguidos dentro ou abaixo da linha do próprio tipo de dia</span>
-        </div>
-        <div class="hint">Melhor sequência: <span class="mono" style="color:var(--text)" id="melhorStreak">—</span></div>
-        <div class="rule"></div>
-        <div class="lbl">Recordes (todo o histórico)</div>
-        <div class="stack" style="gap:9px" id="recordes"></div>
-      </div>
-      <div class="card stack" style="gap:11px">
-        <h2>Marcos</h2>
-        <div class="stack" style="gap:11px" id="marcos"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card stack">
+  <div class="card stack" id="cardRegistros">
     <div class="bar" style="justify-content:space-between">
       <h2>Registros de <span id="diaSelRot">—</span> <span class="sub" id="diaSelResumo"></span></h2>
       <div class="bar" style="gap:7px">
@@ -364,11 +286,152 @@
       <span id="status"></span>
     </div>
 
+    <div class="table-help"><strong style="color:var(--text)">Como usar esta tabela:</strong> marque o motivo e use a nota apenas para registrar contexto. Depois de alguns registros, “Gatilhos declarados” mostra o que mais pesa e ajuda a reconhecer a situação antes da próxima decisão.</div>
+
     <div>
-      <div class="tbl-h lbl"><span>Hora</span><span>Qtd (g)</span><span>Desde o anterior</span><span>Motivo</span></div>
+      <div class="tbl-h lbl"><span>Data</span><span>Hora</span><span>Qtd (g)</span><span>Desde o anterior</span><span>Motivo / Nota</span></div>
       <div id="regsDia"></div>
     </div>
   </div>
+
+  <div class="g2 calrow" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">
+    <div class="card stack">
+      <div class="bar" style="justify-content:space-between">
+        <h2 id="tituloMes">—</h2>
+        <div class="bar" style="gap:6px">
+          <button class="btn" id="mesPrev" type="button">‹</button>
+          <button class="btn" id="mesNext" type="button">›</button>
+        </div>
+      </div>
+      <div class="hint">Cor comparada com a <strong>sua mediana daquele tipo de dia</strong> — um sábado de 8 g é verde, uma terça de 4 g é vermelha.</div>
+      <div class="calgrid" id="cal"></div>
+      <div class="legend" style="border-top:1px solid var(--border);padding-top:11px">
+        <span class="i"><em style="background:var(--good-bd)"></em>bem abaixo da sua linha</span>
+        <span class="i"><em style="background:var(--line-bd)"></em>na linha</span>
+        <span class="i"><em style="background:var(--up-bd)"></em>acima</span>
+        <span class="i"><em style="background:var(--bad-bd)"></em>muito acima</span>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card stack" style="gap:12px">
+        <h2>Rota de redução <span class="sub">direção: zero</span></h2>
+        <div class="route-head">
+          <span class="route-progress hide" id="rotaProgresso">—</span>
+          <span class="sub" id="rotaFase">Construindo sua linha de base</span>
+        </div>
+        <div class="track route-track"><i id="rotaBar" style="width:0;background:var(--accent)"></i></div>
+        <div class="route-steps" id="rotaEtapas"></div>
+        <div class="route-message" id="rotaMensagem">Primeiro medimos com honestidade; depois reduzimos sem perder a direção.</div>
+        <div class="route-next" id="rotaProximo"></div>
+      </div>
+      <div class="card stack">
+        <h2>Sequência</h2>
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span class="streak" id="streak">0</span>
+          <span class="hint">dias seguidos dentro ou abaixo da linha do próprio tipo de dia</span>
+        </div>
+        <div class="hint">Melhor sequência: <span class="mono" style="color:var(--text)" id="melhorStreak">—</span></div>
+        <div class="rule"></div>
+        <div class="lbl">Recordes (todo o histórico)</div>
+        <div class="stack" style="gap:9px" id="recordes"></div>
+      </div>
+      <div class="card stack" style="gap:11px">
+        <h2>Marcos</h2>
+        <div class="stack" style="gap:11px" id="marcos"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card stack">
+    <h2>Como usar os dados <span class="sub">leitura curta, ação concreta</span></h2>
+    <div class="guide-grid">
+      <div class="guide-step"><span class="num">1</span><div><strong>Evolução: leia a direção</strong><p>Compare semanas, não dias isolados. A média de 7 dias precisa cair de forma sustentável.</p></div></div>
+      <div class="guide-step"><span class="num">2</span><div><strong>Padrões: ache a concentração</strong><p>Abra a seção e veja qual tipo de dia, horário ou motivo concentra mais consumo.</p></div></div>
+      <div class="guide-step"><span class="num">3</span><div><strong>Alavancas: teste uma mudança</strong><p>Escolha uma sugestão por 7 dias e confira em Evolução se a linha respondeu.</p></div></div>
+    </div>
+    <div class="next-action">
+      <span class="lbl">Próximo teste</span>
+      <strong id="acaoAgora">Continue registrando para revelar o primeiro padrão.</strong>
+      <span id="acaoPorque">O painel precisa de alguns dias comparáveis antes de recomendar uma mudança.</span>
+    </div>
+  </div>
+
+  <div class="card verdict">
+    <div class="txt">
+      <div class="l1" id="vL1">Carregando…</div>
+      <div class="l2" id="vL2"></div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span class="big hide" id="vDelta">—</span>
+      <span class="cap">vs. os 7 dias anteriores</span>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <details class="card" open>
+    <summary style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:15px;list-style:none;cursor:pointer">
+      <h2>Evolução <span class="sub">média de 7 dias vs. trajetória da meta</span></h2>
+      <div class="legend" id="chartLegend"></div><span class="chev">▸</span>
+    </summary>
+    <div class="chart-wrap">
+      <div class="yax"><span id="yMax">—</span><span id="yMid">—</span><span>0</span></div>
+      <div style="flex:1;min-width:0">
+        <div class="plot" id="plot">
+          <div class="grid" style="top:0"></div>
+          <div class="grid" style="top:50%"></div>
+          <div class="bars" id="bars"></div>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polyline id="lineMeta" fill="none" stroke="var(--accent-2)" stroke-width="1.5" stroke-dasharray="5 4" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
+            <polyline id="lineMedia" fill="none" stroke="var(--line-fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
+          </svg>
+        </div>
+        <div class="xax" id="xax"></div>
+      </div>
+    </div>
+    <div class="chart-read">
+      <div><strong>Barras = total de cada dia</strong>A cor separa home office, escritório e dia off. Procure os dias que concentram os maiores picos.</div>
+      <div><strong>Linha contínua = sua tendência</strong>Ela suaviza oscilações. Se estiver caindo, a redução está se sustentando; um único dia baixo não basta.</div>
+      <div><strong>Linha tracejada = a rota escolhida</strong>Quando sua linha se aproxima ou fica abaixo dela, o ritmo está alinhado à meta mensal.</div>
+    </div>
+  </details>
+
+  <details class="stack">
+    <summary style="display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;margin-bottom:2px">
+      <h2>Padrões <span class="sub">onde o peso está e quando acontece</span></h2><span class="chev">▸</span>
+    </summary>
+    <div class="g2">
+    <div class="card stack">
+      <div class="bar" style="justify-content:space-between">
+        <h2>Onde o peso está</h2><span class="sub">mediana por tipo de dia</span>
+      </div>
+      <div class="stack" id="porTipo"></div>
+      <div class="rule"></div>
+      <div class="lbl">Gatilhos declarados</div>
+      <div class="stack" id="porGatilho"></div>
+    </div>
+
+    <div class="card stack">
+      <div class="bar" style="justify-content:space-between">
+        <h2>Quando <span class="sub">dia começa às 04h</span></h2>
+        <div class="bar" style="gap:5px" id="filtroHora">
+          <button class="btn pill on" data-f="todos" type="button">Todos</button>
+          <button class="btn pill" data-f="uteis" type="button">Úteis</button>
+          <button class="btn pill" data-f="off" type="button">Off</button>
+        </div>
+      </div>
+      <div class="hbars" id="hbars"></div>
+      <div class="xax" id="hax"></div>
+      <div class="hint" style="border-top:1px solid var(--border);padding-top:11px" id="notaHoras"></div>
+    </div>
+  </div>
+  </details>
+
+  <details class="card stack">
+    <summary style="display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;margin-bottom:2px"><h2>Alavancas <span class="sub">o que os seus próprios dados dizem que funciona</span></h2><span class="chev">▸</span></summary>
+    <div class="g3" id="alavancas"></div>
+  </details>
 
   <div class="card bar">
     <span class="lbl" style="margin-right:4px">Backup</span>
@@ -381,33 +444,7 @@
 
   <div class="foot">Tudo local. Nada sai deste navegador.</div>
 </div>
-
-<div class="modal-overlay" id="editModal" style="display:none">
-  <div class="modal">
-    <h3>Editar registro</h3>
-    <div class="f">
-      <label class="lbl" for="editData">Data</label>
-      <input type="date" id="editData" />
-    </div>
-    <div class="f">
-      <label class="lbl" for="editQtd">Quantidade (g)</label>
-      <input type="text" id="editQtd" class="mono" placeholder="0,8" />
-    </div>
-    <div class="f">
-      <span class="lbl">Hora</span>
-      <div class="bar" style="gap:5px">
-        <select id="editHH" class="mono" style="padding:9px 8px;font-size:14px"></select>
-        <span class="muted" style="font-weight:700">:</span>
-        <select id="editMM" class="mono" style="padding:9px 8px;font-size:14px"></select>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="editCancelBtn" type="button">Cancelar</button>
-      <button class="btn primary" id="editSaveBtn" type="button">Salvar</button>
-    </div>
-  </div>
-</div>
-
+<script src="mensagens.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Registro de Atividade",
-  "version": "1.0",
-  "description": "Extensão para registrar atividades e acompanhar os resultados.",
+  "version": "1.1.0",
+  "description": "Registro local com análise de padrões e uma rota prática de redução até zero.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
