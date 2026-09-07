@@ -207,6 +207,67 @@
     .stat .sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; }
     .stat.acc { border-color: var(--accent); background: var(--accent-soft); }
     .stat.acc .val { color: var(--accent-strong); }
+    /* Linha do dia: barra + comparação com a linha do MESMO tipo de dia */
+    .linha-dia { margin-top: 11px; }
+    .barra {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--surface-3);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .barra > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      transition: width .25s ease;
+    }
+    .barra.acima > i { background: #e0a028; }
+    .barra.muito > i { background: var(--danger); }
+    #popupLinha {
+      margin-top: 7px;
+      text-align: center;
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--text-muted);
+      text-wrap: pretty;
+    }
+    #popupLinha b { font-weight: 700; }
+    #popupLinha.ok b { color: var(--accent-strong); }
+    #popupLinha.acima b { color: #b97b0c; }
+    #popupLinha.muito b { color: var(--danger); }
+    :root[data-theme="dark"] #popupLinha.acima b { color: #f0b64a; }
+    /* Tipo do dia: a comparação só é honesta se o dia estiver classificado */
+    .tipos {
+      display: flex;
+      gap: 5px;
+      margin-top: 9px;
+      align-items: center;
+      justify-content: center;
+    }
+    .tipos .lab {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+    }
+    .tipo-chip {
+      width: auto;
+      margin: 0;
+      padding: 4px 9px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .tipo-chip:hover { background: var(--surface-3); color: var(--text); }
+    .tipo-chip.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
     #popupMsg {
       margin-top: 11px;
       padding: 10px 11px;
@@ -262,7 +323,14 @@
       <div class="sub" id="stGapSub">atrás</div>
     </div>
   </div>
+  <!-- Comparação com a linha do mesmo tipo de dia (off / home office / escritório) -->
+  <div class="linha-dia">
+    <div class="barra" id="popupBarra"><i></i></div>
+    <div id="popupLinha"></div>
+    <div class="tipos" id="popupTipos"></div>
+  </div>
   <div id="popupMsg"></div>
+  <script src="dia.js"></script>
   <script src="mensagens.js"></script>
   <script src="popup.js"></script>
 </body>

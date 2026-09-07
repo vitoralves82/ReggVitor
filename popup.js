@@ -98,11 +98,95 @@ function formatGap(ms) {
 }
 
 // Atualiza o resumo do dia e os chips de valor a partir do storage.
-// Usa o mesmo dia lógico da página (começa às 04h), para as duas telas
-// contarem a mesma coisa quando há registro de madrugada.
+// O dia lógico e o tipo de dia vêm de dia.js, o mesmo módulo usado pelo
+// painel: as duas telas precisam contar e comparar a mesma coisa.
 function chaveLogicaPopup(ts) {
-  let d = new Date(ts - 4 * 3600000);
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return window.RA_DIA.chaveLogica(ts);
+}
+
+// Rótulos em minúsculas para caber na frase de comparação
+const ROTULO_TIPO = { home: "home office", office: "escritório", off: "dia off" };
+const PLURAL_TIPO = { home: "dias de home office", office: "dias de escritório", off: "dias off" };
+
+// Tipos de dia corrigidos à mão (chave tiposDia do storage)
+let tiposDia = {};
+
+// Comparação do dia com a linha do MESMO tipo de dia.
+// Um sábado comparado com a média de todos os dias produz um alerta inútil:
+// a referência precisa ser a mediana dos dias off, dos dias de home office
+// ou dos dias de escritório, conforme o dia de hoje.
+function pintarLinhaDia(registros) {
+  let barra = document.getElementById("popupBarra");
+  let linha = document.getElementById("popupLinha");
+  if (!barra || !linha) return null;
+
+  let L = window.RA_DIA.linhaDoDia(registros, tiposDia, null);
+  let rot = ROTULO_TIPO[L.tipo];
+  let fill = barra.querySelector("i");
+  barra.className = "barra";
+  linha.className = "";
+
+  if (L.base === null) {
+    fill.style.width = "0%";
+    linha.textContent = registros.length
+      ? "Poucos dias completos para uma linha de " + rot + ". Continue registrando."
+      : "Sem histórico ainda. A linha de cada tipo de dia aparece com os primeiros dias completos.";
+    return L;
+  }
+
+  let dif = L.total - L.base;
+  let tol = 0.05; // abaixo disso a diferença é ruído de arredondamento
+  let razao = L.base > 0 ? L.total / L.base : (L.total > 0 ? 2 : 0);
+  let estado = razao <= 1.0001 ? "ok" : (razao <= 1.25 ? "acima" : "muito");
+
+  fill.style.width = Math.round(Math.min(razao, 1) * 100) + "%";
+  if (estado !== "ok") barra.className = "barra " + estado;
+  linha.className = estado;
+
+  let ref = L.generica
+    ? "da sua média diária (" + formatNumberBR(L.base) + " g)"
+    : "da sua linha de " + rot + " (" + formatNumberBR(L.base) + " g)";
+  let cauda = L.generica
+    ? " · ainda sem " + window.RA_DIA.MIN_AMOSTRA + " " + PLURAL_TIPO[L.tipo] + " completos para comparar"
+    : "";
+
+  if (Math.abs(dif) <= tol) {
+    linha.innerHTML = "<b>na linha</b> " + ref + cauda;
+  } else {
+    linha.innerHTML = "<b>" + formatNumberBR(Math.abs(dif)) + " g " + (dif > 0 ? "acima" : "abaixo") + "</b> " + ref + cauda;
+  }
+  return L;
+}
+
+// Chips do tipo de dia: a comparação só é honesta se o dia estiver
+// classificado. O padrão vem do dia da semana e pode estar errado
+// (feriado, folga no meio da semana, escritório fora de terça/quinta).
+function renderTiposDia(registros) {
+  let box = document.getElementById("popupTipos");
+  if (!box) return;
+  let k = window.RA_DIA.hoje();
+  let atual = window.RA_DIA.tipoDe(k, tiposDia);
+  box.innerHTML = "";
+  let lab = document.createElement("span");
+  lab.className = "lab";
+  lab.textContent = "Hoje é";
+  box.appendChild(lab);
+  window.RA_DIA.ORDEM.forEach(function (t) {
+    let b = document.createElement("button");
+    b.type = "button";
+    b.tabIndex = -1;
+    b.className = "tipo-chip" + (t === atual ? " on" : "");
+    b.textContent = window.RA_DIA.NOMES[t];
+    b.title = "Comparar hoje com a mediana dos seus dias de " + ROTULO_TIPO[t];
+    b.addEventListener("click", function () {
+      tiposDia[k] = t;
+      chrome.storage.local.set({ tiposDia: JSON.stringify(tiposDia) }, function () {
+        renderTiposDia(registros);
+        pintarLinhaDia(registros);
+      });
+    });
+    box.appendChild(b);
+  });
 }
 
 let ultimoTs = null; // guardado para o contador de intervalo seguir correndo
@@ -119,8 +203,9 @@ function pintarGap() {
 
 function atualizarResumoHoje() {
   let hoje = chaveLogicaPopup(Date.now());
-  chrome.storage.local.get(["registros"], function(result) {
+  chrome.storage.local.get(["registros", "tiposDia"], function(result) {
     let registros = result.registros ? JSON.parse(result.registros) : [];
+    try { tiposDia = result.tiposDia ? JSON.parse(result.tiposDia) : {}; } catch (e) { tiposDia = {}; }
     let doDia = registros.filter(r => chaveLogicaPopup(parseInt(r.timestamp, 10)) === hoje);
     let total = doDia.reduce((soma, r) => soma + (r.quantidade || 0), 0);
 
@@ -138,11 +223,17 @@ function atualizarResumoHoje() {
     ultimoTs = ts || null;
     let gapTxt = pintarGap();
 
+    // Comparação com a linha do mesmo tipo de dia e seletor do tipo
+    let linha = pintarLinhaDia(registros);
+    renderTiposDia(registros);
+
     // Frase de contexto (banco em mensagens.js)
     let msgEl = document.getElementById("popupMsg");
     if (msgEl && window.MSGS) {
+      let pesado = linha && linha.base !== null && linha.total > linha.base + 0.05;
       if (!registros.length) msgEl.textContent = window.MSGS.escolher("sem_dados");
       else if (!doDia.length) msgEl.textContent = window.MSGS.escolher("popup_limpo");
+      else if (pesado) msgEl.textContent = window.MSGS.escolher("dia_pesado");
       else if (gapTxt && (Date.now() - ultimoTs) >= 3 * 3600000) msgEl.textContent = window.MSGS.escolher("popup_intervalo", { gap: gapTxt });
       else msgEl.textContent = window.MSGS.escolher("popup_neutro");
     }
