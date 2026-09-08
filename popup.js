@@ -56,6 +56,11 @@ function aplicarTemaSalvo() {
   chrome.storage.local.get(["config"], function(result) {
     let cfg = {};
     try { cfg = result.config ? JSON.parse(result.config) : {}; } catch (e) { cfg = {}; }
+    window.__tom = cfg.tom || "frases";
+    if (window.__tom === "numeros") {
+      let m = document.getElementById("popupMsg");
+      if (m) m.textContent = "";
+    }
     let escolha = cfg.tema || "dark";
     if (escolha === "light" || escolha === "dark") {
       document.documentElement.setAttribute("data-theme", escolha);
@@ -65,25 +70,32 @@ function aplicarTemaSalvo() {
   });
 }
 
-// Renderiza os chips de valor (1 é o padrão; demais são os últimos usados)
+// Renderiza os chips de valor: o primeiro é o último valor registrado,
+// os demais são os recentes em ordem crescente.
 function renderChips(registros) {
   let container = document.getElementById("popupChips");
   let inputEl = document.getElementById("popupQuantidade");
   container.innerHTML = "";
-  let vals = [1];
-  for (let i = registros.length - 1; i >= 0 && vals.length < 6; i--) {
-    let q = registros[i].quantidade;
-    if (!vals.some(v => Math.abs(v - q) < 0.001)) vals.push(q);
+  let ult = registros.length ? registros[registros.length - 1].quantidade : 1;
+  let outros = [];
+  for (let i = registros.length - 2; i >= 0 && outros.length < 5; i--) {
+    let v = registros[i].quantidade;
+    if (Math.abs(v - ult) < 0.001) continue;
+    if (!outros.some(x => Math.abs(x - v) < 0.001)) outros.push(v);
   }
-  vals.forEach((v, idx) => {
+  outros.sort((a, b) => a - b);
+  [ult].concat(outros).forEach((v, idx) => {
     let b = document.createElement("button");
     b.type = "button";
     b.tabIndex = -1; // atalho de clique; não interrompe o Tab até a hora
     b.className = "chip" + (idx === 0 ? " chip-default" : "");
+    if (idx === 0) b.title = "Último valor registrado";
     b.textContent = formatChip(v);
-    b.addEventListener("click", () => { inputEl.value = formatChip(v); inputEl.focus(); });
+    b.addEventListener("click", () => { inputEl.value = formatChip(v); inputEl.select(); });
     container.appendChild(b);
   });
+  // campo já vem preenchido com o último valor registrado
+  if (!inputEl.value.trim()) inputEl.value = formatChip(ult);
 }
 
 // Intervalo legível a partir de milissegundos
@@ -98,69 +110,72 @@ function formatGap(ms) {
 }
 
 // Atualiza o resumo do dia e os chips de valor a partir do storage.
-// O dia lógico e o tipo de dia vêm de dia.js, o mesmo módulo usado pelo
-// painel: as duas telas precisam contar e comparar a mesma coisa.
+// Usa o mesmo dia lógico da página (começa às 04h), para as duas telas
+// contarem a mesma coisa quando há registro de madrugada.
 function chaveLogicaPopup(ts) {
   return window.RA_DIA.chaveLogica(ts);
 }
 
-// Rótulos em minúsculas para caber na frase de comparação
-const ROTULO_TIPO = { home: "home office", office: "escritório", off: "dia off" };
-const PLURAL_TIPO = { home: "dias de home office", office: "dias de escritório", off: "dias off" };
-
-// Tipos de dia corrigidos à mão (chave tiposDia do storage)
+// Tipos de dia corrigidos à mão e configuração do painel (meta, janela)
 let tiposDia = {};
+let cfgPainel = {};
 
-// Comparação do dia com a linha do MESMO tipo de dia.
-// Um sábado comparado com a média de todos os dias produz um alerta inútil:
-// a referência precisa ser a mediana dos dias off, dos dias de home office
-// ou dos dias de escritório, conforme o dia de hoje.
-function pintarLinhaDia(registros) {
-  let barra = document.getElementById("popupBarra");
-  let linha = document.getElementById("popupLinha");
-  if (!barra || !linha) return null;
+let ultimoTs = null; // guardado para o contador de intervalo seguir correndo
 
-  let L = window.RA_DIA.linhaDoDia(registros, tiposDia, null);
-  let rot = ROTULO_TIPO[L.tipo];
-  let fill = barra.querySelector("i");
-  barra.className = "barra";
-  linha.className = "";
-
-  if (L.base === null) {
-    fill.style.width = "0%";
-    linha.textContent = registros.length
-      ? "Poucos dias completos para uma linha de " + rot + ". Continue registrando."
-      : "Sem histórico ainda. A linha de cada tipo de dia aparece com os primeiros dias completos.";
-    return L;
-  }
-
-  let dif = L.total - L.base;
-  let tol = 0.05; // abaixo disso a diferença é ruído de arredondamento
-  let razao = L.base > 0 ? L.total / L.base : (L.total > 0 ? 2 : 0);
-  let estado = razao <= 1.0001 ? "ok" : (razao <= 1.25 ? "acima" : "muito");
-
-  fill.style.width = Math.round(Math.min(razao, 1) * 100) + "%";
-  if (estado !== "ok") barra.className = "barra " + estado;
-  linha.className = estado;
-
-  let ref = L.generica
-    ? "da sua média diária (" + formatNumberBR(L.base) + " g)"
-    : "da sua linha de " + rot + " (" + formatNumberBR(L.base) + " g)";
-  let cauda = L.generica
-    ? " · ainda sem " + window.RA_DIA.MIN_AMOSTRA + " " + PLURAL_TIPO[L.tipo] + " completos para comparar"
-    : "";
-
-  if (Math.abs(dif) <= tol) {
-    linha.innerHTML = "<b>na linha</b> " + ref + cauda;
-  } else {
-    linha.innerHTML = "<b>" + formatNumberBR(Math.abs(dif)) + " g " + (dif > 0 ? "acima" : "abaixo") + "</b> " + ref + cauda;
-  }
-  return L;
+function pintarGap() {
+  let vEl = document.getElementById("stGap");
+  let sEl = document.getElementById("stGapSub");
+  if (!ultimoTs) { vEl.textContent = "—"; sEl.textContent = "sem registro"; return null; }
+  let g = formatGap(Date.now() - ultimoTs);
+  vEl.innerHTML = g.v + (g.u ? '<span class="u">' + g.u + "</span>" : "");
+  sEl.textContent = "desde o último";
+  return g.txt;
 }
 
-// Chips do tipo de dia: a comparação só é honesta se o dia estiver
-// classificado. O padrão vem do dia da semana e pode estar errado
-// (feriado, folga no meio da semana, escritório fora de terça/quinta).
+// Barra discreta: onde o dia está em relação à linha do MESMO tipo de dia.
+// Um sábado medido contra a média de todos os dias apareceria quase sempre
+// "acima", e uma terça quase sempre "abaixo": o aviso pararia de orientar.
+function pintarPace(ref) {
+  let box = document.getElementById("pace");
+  if (!box) return;
+  if (!ref || !ref.base) { box.hidden = true; return; }
+  box.hidden = false;
+  let alvoDia = ref.base;
+  let razao = alvoDia > 0 ? ref.total / alvoDia : 0;
+  let cor = razao > 1 ? "var(--danger)" : (razao >= 0.85 ? "var(--warn)" : "var(--accent-strong)");
+  let fill = document.getElementById("paceFill");
+  fill.style.width = (Math.max(0, Math.min(1, razao)) * 100).toFixed(0) + "%";
+  fill.style.background = cor;
+
+  // Com poucos dias daquele tipo a mediana ainda é ruído: a referência cai
+  // para a média dos últimos dias completos e o texto avisa.
+  let nome = ref.generica ? "média diária" : "linha de " + ref.rotulo;
+  let valor = " (" + formatNumberBR(alvoDia) + " g)";
+  let dif = ref.total - alvoDia;
+  let txt;
+  if (dif > 0.05) {
+    txt = '<b style="color:' + cor + '">' + formatNumberBR(dif) + ' g acima</b> da ' + nome + valor;
+  } else if (dif >= -0.05) {
+    txt = '<b style="color:' + cor + '">na ' + nome + '</b>' + valor;
+  } else {
+    txt = '<b style="color:' + cor + '">restam ' + formatNumberBR(-dif) + ' g</b> até a ' + nome + valor;
+  }
+  document.getElementById("paceTxt").innerHTML = txt;
+
+  // O detalhe fica no title: o popup precisa caber em uma linha
+  let det = ref.generica
+    ? "Média dos últimos " + ref.diasCompletos + " dias completos. Faltam " +
+      window.RA_DIA.MIN_AMOSTRA + " " + ref.plural + " completos para a linha específica."
+    : "Mediana de " + ref.amostra + " " + ref.plural + " completos.";
+  if (ref.alvoMeta && cfgPainel.meta > 0 && formatNumberBR(ref.alvoMeta) !== formatNumberBR(alvoDia)) {
+    det += " Alvo com a meta de −" + Math.round(cfgPainel.meta) + "%/mês: " + formatNumberBR(ref.alvoMeta) + " g.";
+  }
+  box.title = det;
+}
+
+// Chips do tipo de dia: o padrão vem do dia da semana e erra em feriado,
+// folga no meio da semana ou escritório fora de terça e quinta. Como é o
+// tipo que escolhe a linha, corrigi-lo aqui muda a leitura na hora.
 function renderTiposDia(registros) {
   let box = document.getElementById("popupTipos");
   if (!box) return;
@@ -177,35 +192,23 @@ function renderTiposDia(registros) {
     b.tabIndex = -1;
     b.className = "tipo-chip" + (t === atual ? " on" : "");
     b.textContent = window.RA_DIA.NOMES[t];
-    b.title = "Comparar hoje com a mediana dos seus dias de " + ROTULO_TIPO[t];
+    b.title = "Comparar hoje com a mediana dos seus " + window.RA_DIA.PLURAIS[t];
     b.addEventListener("click", function () {
       tiposDia[k] = t;
       chrome.storage.local.set({ tiposDia: JSON.stringify(tiposDia) }, function () {
-        renderTiposDia(registros);
-        pintarLinhaDia(registros);
+        atualizarResumoHoje();
       });
     });
     box.appendChild(b);
   });
 }
 
-let ultimoTs = null; // guardado para o contador de intervalo seguir correndo
-
-function pintarGap() {
-  let vEl = document.getElementById("stGap");
-  let sEl = document.getElementById("stGapSub");
-  if (!ultimoTs) { vEl.textContent = "—"; sEl.textContent = "sem registro"; return null; }
-  let g = formatGap(Date.now() - ultimoTs);
-  vEl.innerHTML = g.v + (g.u ? '<span class="u">' + g.u + "</span>" : "");
-  sEl.textContent = "desde o último";
-  return g.txt;
-}
-
 function atualizarResumoHoje() {
   let hoje = chaveLogicaPopup(Date.now());
-  chrome.storage.local.get(["registros", "tiposDia"], function(result) {
+  chrome.storage.local.get(["registros", "tiposDia", "config"], function(result) {
     let registros = result.registros ? JSON.parse(result.registros) : [];
     try { tiposDia = result.tiposDia ? JSON.parse(result.tiposDia) : {}; } catch (e) { tiposDia = {}; }
+    try { cfgPainel = result.config ? JSON.parse(result.config) : {}; } catch (e) { cfgPainel = {}; }
     let doDia = registros.filter(r => chaveLogicaPopup(parseInt(r.timestamp, 10)) === hoje);
     let total = doDia.reduce((soma, r) => soma + (r.quantidade || 0), 0);
 
@@ -223,19 +226,36 @@ function atualizarResumoHoje() {
     ultimoTs = ts || null;
     let gapTxt = pintarGap();
 
-    // Comparação com a linha do mesmo tipo de dia e seletor do tipo
-    let linha = pintarLinhaDia(registros);
+    // Referência do dia: a linha do mesmo tipo de dia, calculada em dia.js
+    // com a mesma regra do painel (hoje fora da conta, dias sem registro
+    // valendo 0 g e mediana no lugar da média).
+    let ref = window.RA_DIA.referenciaDoDia(registros, tiposDia, cfgPainel, hoje);
+    let alvoDia = ref.base;
+    pintarPace(ref);
     renderTiposDia(registros);
 
-    // Frase de contexto (banco em mensagens.js)
+    // Frase de contexto (banco em mensagens.js), escolhida pela distância até a média
     let msgEl = document.getElementById("popupMsg");
-    if (msgEl && window.MSGS) {
-      let pesado = linha && linha.base !== null && linha.total > linha.base + 0.05;
-      if (!registros.length) msgEl.textContent = window.MSGS.escolher("sem_dados");
-      else if (!doDia.length) msgEl.textContent = window.MSGS.escolher("popup_limpo");
-      else if (pesado) msgEl.textContent = window.MSGS.escolher("dia_pesado");
-      else if (gapTxt && (Date.now() - ultimoTs) >= 3 * 3600000) msgEl.textContent = window.MSGS.escolher("popup_intervalo", { gap: gapTxt });
-      else msgEl.textContent = window.MSGS.escolher("popup_neutro");
+    if (msgEl && window.MSGS && window.__tom !== "numeros") {
+      let vars = {
+        gap: gapTxt,
+        tipo: ref.generica ? "dia" : ref.rotulo,
+        plural: ref.generica ? "dias" : ref.plural
+      };
+      let ctx = "popup_neutro";
+      if (!registros.length) ctx = "sem_dados";
+      else if (!doDia.length) ctx = "popup_limpo";
+      else if (alvoDia) {
+        let razao = total / alvoDia;
+        vars.resta = formatNumberBR(Math.max(0, alvoDia - total));
+        vars.excesso = formatNumberBR(Math.max(0, total - alvoDia));
+        vars.alvo = formatNumberBR(alvoDia);
+        ctx = razao > 1 ? "popup_acima" : (razao >= 0.85 ? "popup_perto" : (razao >= 0.5 ? "popup_meio" : "popup_folga"));
+      }
+      if (registros.length && doDia.length && gapTxt && (Date.now() - ultimoTs) >= 3 * 3600000 && Math.random() < 0.3) {
+        ctx = "popup_intervalo";
+      }
+      msgEl.textContent = window.MSGS.escolher(ctx, vars);
     }
 
     renderChips(registros);
@@ -289,6 +309,52 @@ function abrirPaginaRegistros() {
   chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
 }
 
+/* ------------------------------ backup CSV ------------------------------ */
+// Mesma regra da página completa, vinda de dia.js: uma cópia só da definição
+function nomeTipoDia(k, tipos) {
+  return window.RA_DIA.NOMES[window.RA_DIA.tipoDe(k, tipos)];
+}
+function csvEsc(v) {
+  let s = String(v == null ? "" : v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function flash(msg, cor) {
+  let st = document.getElementById("popupStatus");
+  st.textContent = msg;
+  st.style.color = cor || "var(--accent-strong)";
+  setTimeout(() => { st.textContent = ""; }, 2500);
+}
+function exportarCsvPopup() {
+  chrome.storage.local.get(["registros", "tiposDia"], function (res) {
+    let regs = [];
+    try { regs = res.registros ? JSON.parse(res.registros) : []; } catch (e) { regs = []; }
+    let tipos = {};
+    try { tipos = res.tiposDia ? JSON.parse(res.tiposDia) : {}; } catch (e) { tipos = {}; }
+    if (!regs.length) { flash("Nada para exportar", "var(--danger)"); return; }
+    let linhas = ["Data,Hora,Quantidade,Motivo,Nota,TipoDia"];
+    regs.slice()
+      .sort((a, b) => parseInt(a.timestamp, 10) - parseInt(b.timestamp, 10))
+      .forEach(function (r) {
+        let ts = parseInt(r.timestamp, 10);
+        let d = new Date(ts);
+        linhas.push([
+          r.data || formatDate(d), r.hora || formatTime(d), r.quantidade,
+          r.gatilho || "", r.nota || "", nomeTipoDia(chaveLogicaPopup(ts), tipos)
+        ].map(csvEsc).join(","));
+      });
+    let url = URL.createObjectURL(new Blob([linhas.join("\n")], { type: "text/csv;charset=utf-8" }));
+    let a = document.createElement("a");
+    a.href = url; a.download = "backup_registros.csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    flash(regs.length + " registros exportados");
+  });
+}
+// O seletor de arquivo fecharia o popup, então a importação abre na página completa
+function importarCsvPopup() {
+  chrome.tabs.create({ url: chrome.runtime.getURL("index.html#importar") });
+}
+
 document.getElementById("popupRegistrarBtn").addEventListener("click", registrarPopup);
 document.getElementById("popupQuantidade").addEventListener("keyup", function(e){
   if (e.key === "Enter") registrarPopup();
@@ -297,6 +363,8 @@ document.getElementById("popupMM").addEventListener("keyup", function(e){
   if (e.key === "Enter") registrarPopup();
 });
 document.getElementById("popupGotoBtn").addEventListener("click", abrirPaginaRegistros);
+document.getElementById("btnExpCsv").addEventListener("click", exportarCsvPopup);
+document.getElementById("btnImpCsv").addEventListener("click", importarCsvPopup);
 document.getElementById("popupAgoraBtn").addEventListener("click", () => {
   setSelectsHora(document.getElementById("popupHH"), document.getElementById("popupMM"), new Date());
 });

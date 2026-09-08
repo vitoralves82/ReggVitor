@@ -5,14 +5,13 @@
   <title>Registro Rápido</title>
   <style>
     :root {
-      --bg: #dfe7f1;
-      --surface: #f8fafc;
-      --surface-2: #ffffff;
-      --surface-3: #d6e0eb;
-      --border: #b9c7d8;
-      --border-strong: #7b8fa7;
-      --text: #0f172a;
-      --text-muted: #475569;
+      --bg: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #f1f5f9;
+      --border: #cbd5e1;
+      --border-strong: #cbd5e1;
+      --text: #1e293b;
+      --text-muted: #64748b;
       --accent: #059669;
       --accent-strong: #047857;
       --accent-soft: #ecfdf5;
@@ -23,62 +22,59 @@
     /* Tema automático (segue o sistema) quando o usuário não forçou um tema */
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme]) {
-        --bg: #131c2e;
-        --surface: #162237;
-        --surface-2: #1c2740;
-        --surface-3: #263752;
-        --border: #3a4d70;
-        --border-strong: #46608a;
-        --text: #e6edf6;
-        --text-muted: #93a1b5;
+        --bg: #1a2439;
+        --surface-2: #2c3c5e;
+        --surface-3: #3d5178;
+        --border: #4b608a;
+        --border-strong: #5f77a4;
+        --text: #f3f7fd;
+        --text-muted: #a8b8ce;
         --accent: #10b981;
-        --accent-strong: #34d399;
-        --accent-soft: #0c2a20;
-        --secondary: #3b82f6;
-        --secondary-strong: #60a5fa;
-        --danger: #f87171;
+        --accent-strong: #45e0a8;
+        --accent-soft: #1b4536;
+        --secondary: #4f8ff7;
+        --secondary-strong: #6ba4fb;
+        --danger: #fb8b8b;
       }
     }
     /* Tema forçado pelo usuário (salvo na página completa) */
     :root[data-theme="dark"] {
-      --bg: #131c2e;
-      --surface: #162237;
-      --surface-2: #1c2740;
-      --surface-3: #263752;
-      --border: #3a4d70;
-      --border-strong: #46608a;
-      --text: #e6edf6;
-      --text-muted: #93a1b5;
+      --bg: #1a2439;
+      --surface-2: #2c3c5e;
+      --surface-3: #3d5178;
+      --border: #4b608a;
+      --border-strong: #5f77a4;
+      --text: #f3f7fd;
+      --text-muted: #a8b8ce;
       --accent: #10b981;
-      --accent-strong: #34d399;
-      --accent-soft: #0c2a20;
-      --secondary: #3b82f6;
-      --secondary-strong: #60a5fa;
-      --danger: #f87171;
+      --accent-strong: #45e0a8;
+      --accent-soft: #1b4536;
+      --secondary: #4f8ff7;
+      --secondary-strong: #6ba4fb;
+      --danger: #fb8b8b;
     }
     * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 16px;
+      padding: 12px;
       width: 300px;
       background: var(--bg);
       color: var(--text);
-      font-size: 14px;
+      font-size: 13px;
     }
-    input, .time-field select, .chip, .btn-agora, .stat, #popupMsg { box-shadow: 0 6px 18px rgba(30,55,85,.07); }
-    .head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+    .head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
     .head .logo {
-      width: 30px; height: 30px; border-radius: 8px;
+      width: 26px; height: 26px; border-radius: 7px;
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      display: grid; place-items: center; font-size: 16px;
+      display: grid; place-items: center; font-size: 14px;
     }
-    h2 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
     label {
       display: block;
-      margin-top: 12px;
-      margin-bottom: 5px;
-      font-size: 11.5px;
+      margin-top: 7px;
+      margin-bottom: 3px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .04em;
@@ -86,12 +82,12 @@
     }
     input[type="text"] {
       width: 100%;
-      padding: 10px 11px;
-      font-size: 15px;
+      padding: 7px 10px;
+      font-size: 14px;
       color: var(--text);
       background: var(--surface-2);
       border: 1px solid var(--border-strong);
-      border-radius: 9px;
+      border-radius: 8px;
       box-sizing: border-box;
       transition: border-color .15s, box-shadow .15s;
     }
@@ -100,7 +96,7 @@
       outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
     }
     /* Atalhos de valor (chips) */
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
     .chip {
       width: auto;
       margin: 0;
@@ -108,23 +104,48 @@
       color: var(--text);
       border: 1px solid var(--border-strong);
       border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
+      padding: 4px 10px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
     }
     .chip:hover { background: var(--surface-3); }
     .chip.chip-default { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+    /* Ferramentas: ícones com rótulo no hover */
+    .tools { display: flex; justify-content: center; gap: 7px; margin-top: 7px; }
+    .ibtn {
+      position: relative;
+      width: auto; margin: 0;
+      padding: 5px 9px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      color: var(--text-muted);
+      display: grid; place-items: center;
+      cursor: pointer;
+    }
+    .ibtn:hover { background: var(--surface-3); color: var(--text); }
+    .ibtn svg { width: 14px; height: 14px; display: block; }
+    .ibtn::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-3); color: var(--text);
+      border: 1px solid var(--border-strong); border-radius: 6px;
+      padding: 3px 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity .12s;
+    }
+    .ibtn:hover::after { opacity: 1; }
     /* Campo de hora (HH : MM) */
     .time-field { display: flex; align-items: center; gap: 6px; }
     .time-field select {
       flex: 1;
-      padding: 10px 8px;
-      font-size: 15px;
+      padding: 7px 7px;
+      font-size: 14px;
       color: var(--text);
       background: var(--surface-2);
       border: 1px solid var(--border-strong);
-      border-radius: 9px;
+      border-radius: 8px;
       cursor: pointer;
       transition: border-color .15s, box-shadow .15s;
     }
@@ -136,8 +157,8 @@
       flex: none;
       width: auto;
       margin: 0;
-      padding: 9px 10px;
-      font-size: 12px;
+      padding: 7px 9px;
+      font-size: 11.5px;
       font-weight: 600;
       color: var(--text-muted);
       background: var(--surface-2);
@@ -146,12 +167,12 @@
     .btn-agora:hover { background: var(--surface-3); color: var(--text); }
     button {
       width: 100%;
-      padding: 10px;
-      margin-top: 12px;
-      font-size: 15px;
+      padding: 8px;
+      margin-top: 8px;
+      font-size: 14px;
       font-weight: 600;
       border: none;
-      border-radius: 9px;
+      border-radius: 8px;
       cursor: pointer;
       color: #fff;
       transition: background .15s, transform .05s;
@@ -162,93 +183,83 @@
     .goto-btn { background-color: var(--secondary); }
     .goto-btn:hover { background-color: var(--secondary-strong); }
     #popupStatus {
-      margin-top: 12px;
+      margin-top: 6px;
       text-align: center;
       font-weight: 600;
       color: var(--accent-strong);
-      min-height: 18px;
-      font-size: 13.5px;
+      min-height: 14px;
+      font-size: 12.5px;
     }
+    :root { --warn: #b45309; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme]) { --warn: #fbbf24; } }
+    :root[data-theme="dark"] { --warn: #fbbf24; }
     /* Painel de contexto: hoje, 7 dias e tempo desde o último registro */
     .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 14px;
-      padding-top: 14px;
+      gap: 5px;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px solid var(--border);
     }
     .stat {
       background: var(--surface-2);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 9px 6px 8px;
+      border-radius: 9px;
+      padding: 6px 5px 5px;
       text-align: center;
       min-width: 0;
     }
     .stat .lab {
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .06em;
       color: var(--text-muted);
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       white-space: nowrap;
     }
     .stat .val {
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 700;
       line-height: 1.05;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       color: var(--text);
     }
-    .stat .val .u { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 1px; }
-    .stat .sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; }
+    .stat .val .u { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-left: 1px; }
+    .stat .sub { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
     .stat.acc { border-color: var(--accent); background: var(--accent-soft); }
     .stat.acc .val { color: var(--accent-strong); }
-    /* Linha do dia: barra + comparação com a linha do MESMO tipo de dia */
-    .linha-dia { margin-top: 11px; }
-    .barra {
-      height: 6px;
+    /* Distância até a linha do mesmo tipo de dia (home office / escritório / off) */
+    .pace { margin-top: 7px; }
+    .pace .ptrack {
+      height: 4px;
       border-radius: 999px;
       background: var(--surface-3);
       overflow: hidden;
-      border: 1px solid var(--border);
     }
-    .barra > i {
-      display: block;
-      height: 100%;
-      width: 0;
-      border-radius: 999px;
-      background: var(--accent);
-      transition: width .25s ease;
-    }
-    .barra.acima > i { background: #e0a028; }
-    .barra.muito > i { background: var(--danger); }
-    #popupLinha {
-      margin-top: 7px;
-      text-align: center;
-      font-size: 11.5px;
-      line-height: 1.4;
+    .pace .ptrack i { display: block; height: 100%; border-radius: 999px; transition: width .2s ease; }
+    .pace .ptxt {
+      margin-top: 4px;
+      font-size: 10px;
       color: var(--text-muted);
-      text-wrap: pretty;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    #popupLinha b { font-weight: 700; }
-    #popupLinha.ok b { color: var(--accent-strong); }
-    #popupLinha.acima b { color: #b97b0c; }
-    #popupLinha.muito b { color: var(--danger); }
-    :root[data-theme="dark"] #popupLinha.acima b { color: #f0b64a; }
+    .pace .ptxt b { font-weight: 700; }
     /* Tipo do dia: a comparação só é honesta se o dia estiver classificado */
     .tipos {
       display: flex;
-      gap: 5px;
-      margin-top: 9px;
+      gap: 4px;
+      margin-top: 6px;
       align-items: center;
       justify-content: center;
     }
     .tipos .lab {
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .05em;
@@ -257,32 +268,27 @@
     .tipo-chip {
       width: auto;
       margin: 0;
-      padding: 4px 9px;
-      font-size: 10.5px;
+      padding: 3px 8px;
+      font-size: 10px;
       font-weight: 600;
       color: var(--text-muted);
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: 999px;
       cursor: pointer;
+      white-space: nowrap;
     }
     .tipo-chip:hover { background: var(--surface-3); color: var(--text); }
     .tipo-chip.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
     #popupMsg {
-      margin-top: 11px;
-      padding: 10px 11px;
-      font-size: 12px;
-      line-height: 1.45;
-      color: var(--text);
-      text-align: left;
+      margin-top: 7px;
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: var(--text-muted);
+      text-align: center;
       text-wrap: pretty;
-      min-height: 17px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent);
-      border-radius: 0 9px 9px 0;
+      min-height: 14px;
     }
-    #popupMsg::before { content:"Direção agora"; display:block; color:var(--accent-strong); font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px; }
   </style>
 </head>
 <body>
@@ -305,6 +311,15 @@
   <button class="register-btn" id="popupRegistrarBtn">Registrar</button>
   <button class="goto-btn" id="popupGotoBtn">Ir para a página de registros</button>
   <div id="popupStatus"></div>
+  <!-- Backup em CSV, sem sair do popup -->
+  <div class="tools">
+    <button type="button" class="ibtn" id="btnExpCsv" data-tip="Exportar CSV" aria-label="Exportar CSV" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 11 5 5 5-5"></path><path d="M4 20h16"></path></svg>
+    </button>
+    <button type="button" class="ibtn" id="btnImpCsv" data-tip="Importar CSV" aria-label="Importar CSV" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"></path><path d="m7 13 5-5 5 5"></path><path d="M4 4h16"></path></svg>
+    </button>
+  </div>
   <!-- Contexto do dia sem precisar abrir a página completa -->
   <div class="stats">
     <div class="stat acc">
@@ -323,12 +338,12 @@
       <div class="sub" id="stGapSub">atrás</div>
     </div>
   </div>
-  <!-- Comparação com a linha do mesmo tipo de dia (off / home office / escritório) -->
-  <div class="linha-dia">
-    <div class="barra" id="popupBarra"><i></i></div>
-    <div id="popupLinha"></div>
-    <div class="tipos" id="popupTipos"></div>
+  <div class="pace" id="pace" hidden>
+    <div class="ptrack"><i id="paceFill"></i></div>
+    <div class="ptxt" id="paceTxt"></div>
   </div>
+  <!-- Classificação do dia: define contra qual linha o dia é medido -->
+  <div class="tipos" id="popupTipos"></div>
   <div id="popupMsg"></div>
   <script src="dia.js"></script>
   <script src="mensagens.js"></script>
