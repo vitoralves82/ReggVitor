@@ -257,10 +257,10 @@
       "Zero registros. O instrumento está pronto se você precisar dele.",
       "Ainda nada hoje. Esse tipo de dia move a média mais que qualquer esforço."
     ],
-    /* ---- popup: bem abaixo da média diária (< 50%) ---- */
+    /* ---- popup: bem abaixo da linha do tipo de dia (< 50%) ---- */
     popup_folga: [
       "Dia leve até agora. Ainda cabem {resta} g antes de encostar na sua média.",
-      "Você está bem abaixo da média diária. Esse tipo de dia é o que move a curva.",
+      "Você está bem abaixo da sua linha de {tipo}. Esse tipo de dia é o que move a curva.",
       "Restam {resta} g de folga. Nada aqui exige esforço extra hoje.",
       "Bem longe da média de {alvo} g. O dia já está trabalhando a seu favor.",
       "Metade do orçamento intacta. Dias assim puxam a média para baixo sozinhos.",
@@ -276,7 +276,7 @@
     popup_meio: [
       "Metade do caminho até a média. Restam {resta} g antes de igualar {alvo} g.",
       "Você está dentro da faixa normal. A partir daqui cada registro pesa mais.",
-      "Faltam {resta} g para a média diária. Ainda dá para fechar abaixo.",
+      "Faltam {resta} g para a sua linha de {tipo}. Ainda dá para fechar abaixo.",
       "Dia dentro do padrão até agora. O intervalo é a variável mais barata daqui em diante.",
       "Restam {resta} g de margem. Alongar o próximo intervalo costuma resolver.",
       "Você está no meio do orçamento de {alvo} g. Nada perdido, nada decidido.",
@@ -290,7 +290,7 @@
     /* ---- popup: encostando na média (85 a 100%) ---- */
     popup_perto: [
       "Perto da média: faltam {resta} g para igualar {alvo} g.",
-      "Você está encostando no seu padrão diário. O próximo registro decide o dia.",
+      "Você está encostando na sua linha de {tipo}. O próximo registro decide o dia.",
       "Restam só {resta} g de margem. Segurar o intervalo agora vale mais que qualquer meta.",
       "Quase na média de {alvo} g. Fechar abaixo ainda está ao alcance.",
       "Margem curta: {resta} g. Adiar o próximo em uma hora costuma bastar.",
@@ -302,17 +302,17 @@
       "Restam {resta} g. Dado exposto na hora certa é metade do ajuste.",
       "Você chegou ao seu nível médio. Daqui para cima é acréscimo, não rotina."
     ],
-    /* ---- popup: acima da média diária ---- */
+    /* ---- popup: acima da linha do tipo de dia ---- */
     popup_acima: [
-      "Hoje passou a média diária em {excesso} g. Amanhã a contagem recomeça.",
+      "Hoje passou a sua linha de {tipo} em {excesso} g. Amanhã a contagem recomeça.",
       "Acima de {alvo} g. Um dia fora da faixa não desfaz a série.",
       "Excesso de {excesso} g em relação ao seu padrão. Registrar isso já é o ajuste.",
       "O dia ficou acima da média. Retome amanhã no menor esforço possível.",
       "Passou {excesso} g do normal. Vale olhar o horário em que a curva subiu.",
-      "Dia acima da linha. A média de sete dias absorve isso sem drama.",
+      "Dia acima da linha. A média móvel absorve isso sem drama.",
       "Você está {excesso} g além de {alvo} g. Interromper agora ainda limita o total.",
       "Acima do padrão. O dado importa mais que a explicação do dia.",
-      "Excedeu a média diária. O próximo registro é opcional, não automático.",
+      "Excedeu a linha dos seus {plural}. O próximo registro é opcional, não automático.",
       "Hoje pesou mais. Um dia fora não muda o patamar, uma semana sim.",
       "Passou da faixa em {excesso} g. Anote o gatilho enquanto está fresco.",
       "Acima de {alvo} g hoje. Amanhã começa no zero, sem juros."

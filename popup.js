@@ -113,9 +113,12 @@ function formatGap(ms) {
 // Usa o mesmo dia lógico da página (começa às 04h), para as duas telas
 // contarem a mesma coisa quando há registro de madrugada.
 function chaveLogicaPopup(ts) {
-  let d = new Date(ts - 4 * 3600000);
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return window.RA_DIA.chaveLogica(ts);
 }
+
+// Tipos de dia corrigidos à mão e configuração do painel (meta, janela)
+let tiposDia = {};
+let cfgPainel = {};
 
 let ultimoTs = null; // guardado para o contador de intervalo seguir correndo
 
@@ -129,35 +132,83 @@ function pintarGap() {
   return g.txt;
 }
 
-function chavesAnteriores(n) {
-  let base = new Date(Date.now() - 4 * 3600000), out = [];
-  for (let i = 1; i <= n; i++) {
-    let d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
-    out.push(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"));
-  }
-  return out;
-}
-
-// Barra discreta: onde o dia está em relação à média diária dos 7 dias anteriores
-function pintarPace(total, alvoDia) {
+// Barra discreta: onde o dia está em relação à linha do MESMO tipo de dia.
+// Um sábado medido contra a média de todos os dias apareceria quase sempre
+// "acima", e uma terça quase sempre "abaixo": o aviso pararia de orientar.
+function pintarPace(ref) {
   let box = document.getElementById("pace");
   if (!box) return;
-  if (!alvoDia) { box.hidden = true; return; }
+  if (!ref || !ref.base) { box.hidden = true; return; }
   box.hidden = false;
-  let razao = total / alvoDia;
+  let alvoDia = ref.base;
+  let razao = alvoDia > 0 ? ref.total / alvoDia : 0;
   let cor = razao > 1 ? "var(--danger)" : (razao >= 0.85 ? "var(--warn)" : "var(--accent-strong)");
   let fill = document.getElementById("paceFill");
   fill.style.width = (Math.max(0, Math.min(1, razao)) * 100).toFixed(0) + "%";
   fill.style.background = cor;
-  document.getElementById("paceTxt").innerHTML = razao > 1
-    ? '<b style="color:' + cor + '">' + formatNumberBR(total - alvoDia) + ' g acima</b> da média diária (' + formatNumberBR(alvoDia) + ' g)'
-    : '<b style="color:' + cor + '">restam ' + formatNumberBR(alvoDia - total) + ' g</b> até a média diária (' + formatNumberBR(alvoDia) + ' g)';
+
+  // Com poucos dias daquele tipo a mediana ainda é ruído: a referência cai
+  // para a média dos últimos dias completos e o texto avisa.
+  let nome = ref.generica ? "média diária" : "linha de " + ref.rotulo;
+  let valor = " (" + formatNumberBR(alvoDia) + " g)";
+  let dif = ref.total - alvoDia;
+  let txt;
+  if (dif > 0.05) {
+    txt = '<b style="color:' + cor + '">' + formatNumberBR(dif) + ' g acima</b> da ' + nome + valor;
+  } else if (dif >= -0.05) {
+    txt = '<b style="color:' + cor + '">na ' + nome + '</b>' + valor;
+  } else {
+    txt = '<b style="color:' + cor + '">restam ' + formatNumberBR(-dif) + ' g</b> até a ' + nome + valor;
+  }
+  document.getElementById("paceTxt").innerHTML = txt;
+
+  // O detalhe fica no title: o popup precisa caber em uma linha
+  let det = ref.generica
+    ? "Média dos últimos " + ref.diasCompletos + " dias completos. Faltam " +
+      window.RA_DIA.MIN_AMOSTRA + " " + ref.plural + " completos para a linha específica."
+    : "Mediana de " + ref.amostra + " " + ref.plural + " completos.";
+  if (ref.alvoMeta && cfgPainel.meta > 0 && formatNumberBR(ref.alvoMeta) !== formatNumberBR(alvoDia)) {
+    det += " Alvo com a meta de −" + Math.round(cfgPainel.meta) + "%/mês: " + formatNumberBR(ref.alvoMeta) + " g.";
+  }
+  box.title = det;
+}
+
+// Chips do tipo de dia: o padrão vem do dia da semana e erra em feriado,
+// folga no meio da semana ou escritório fora de terça e quinta. Como é o
+// tipo que escolhe a linha, corrigi-lo aqui muda a leitura na hora.
+function renderTiposDia(registros) {
+  let box = document.getElementById("popupTipos");
+  if (!box) return;
+  let k = window.RA_DIA.hoje();
+  let atual = window.RA_DIA.tipoDe(k, tiposDia);
+  box.innerHTML = "";
+  let lab = document.createElement("span");
+  lab.className = "lab";
+  lab.textContent = "Hoje é";
+  box.appendChild(lab);
+  window.RA_DIA.ORDEM.forEach(function (t) {
+    let b = document.createElement("button");
+    b.type = "button";
+    b.tabIndex = -1;
+    b.className = "tipo-chip" + (t === atual ? " on" : "");
+    b.textContent = window.RA_DIA.NOMES[t];
+    b.title = "Comparar hoje com a mediana dos seus " + window.RA_DIA.PLURAIS[t];
+    b.addEventListener("click", function () {
+      tiposDia[k] = t;
+      chrome.storage.local.set({ tiposDia: JSON.stringify(tiposDia) }, function () {
+        atualizarResumoHoje();
+      });
+    });
+    box.appendChild(b);
+  });
 }
 
 function atualizarResumoHoje() {
   let hoje = chaveLogicaPopup(Date.now());
-  chrome.storage.local.get(["registros"], function(result) {
+  chrome.storage.local.get(["registros", "tiposDia", "config"], function(result) {
     let registros = result.registros ? JSON.parse(result.registros) : [];
+    try { tiposDia = result.tiposDia ? JSON.parse(result.tiposDia) : {}; } catch (e) { tiposDia = {}; }
+    try { cfgPainel = result.config ? JSON.parse(result.config) : {}; } catch (e) { cfgPainel = {}; }
     let doDia = registros.filter(r => chaveLogicaPopup(parseInt(r.timestamp, 10)) === hoje);
     let total = doDia.reduce((soma, r) => soma + (r.quantidade || 0), 0);
 
@@ -175,19 +226,23 @@ function atualizarResumoHoje() {
     ultimoTs = ts || null;
     let gapTxt = pintarGap();
 
-    // Referência do dia: média dos 7 dias lógicos anteriores (hoje fora da conta)
-    let ant = chavesAnteriores(7), somaAnt = 0, diasComReg = {};
-    registros.forEach(r => {
-      let k = chaveLogicaPopup(parseInt(r.timestamp, 10));
-      if (ant.indexOf(k) >= 0) { somaAnt += (r.quantidade || 0); diasComReg[k] = 1; }
-    });
-    let alvoDia = Object.keys(diasComReg).length >= 2 && somaAnt > 0 ? somaAnt / 7 : null;
-    pintarPace(total, alvoDia);
+    // Referência do dia: a linha do mesmo tipo de dia, calculada em dia.js
+    // com a mesma regra do painel (hoje fora da conta, dias sem registro
+    // valendo 0 g e mediana no lugar da média).
+    let ref = window.RA_DIA.referenciaDoDia(registros, tiposDia, cfgPainel, hoje);
+    let alvoDia = ref.base;
+    pintarPace(ref);
+    renderTiposDia(registros);
 
     // Frase de contexto (banco em mensagens.js), escolhida pela distância até a média
     let msgEl = document.getElementById("popupMsg");
     if (msgEl && window.MSGS && window.__tom !== "numeros") {
-      let vars = { gap: gapTxt }, ctx = "popup_neutro";
+      let vars = {
+        gap: gapTxt,
+        tipo: ref.generica ? "dia" : ref.rotulo,
+        plural: ref.generica ? "dias" : ref.plural
+      };
+      let ctx = "popup_neutro";
       if (!registros.length) ctx = "sem_dados";
       else if (!doDia.length) ctx = "popup_limpo";
       else if (alvoDia) {
@@ -255,15 +310,9 @@ function abrirPaginaRegistros() {
 }
 
 /* ------------------------------ backup CSV ------------------------------ */
-var NOMES_TIPO = { home: "Home office", office: "Escritório", off: "Dia off" };
-
-// Mesma regra da página completa: terça e quinta são escritório, fim de semana é off
+// Mesma regra da página completa, vinda de dia.js: uma cópia só da definição
 function nomeTipoDia(k, tipos) {
-  if (tipos && tipos[k] && NOMES_TIPO[tipos[k]]) return NOMES_TIPO[tipos[k]];
-  let p = k.split("-").map(Number);
-  let wd = new Date(p[0], p[1] - 1, p[2]).getDay();
-  if (wd === 0 || wd === 6) return NOMES_TIPO.off;
-  return (wd === 2 || wd === 4) ? NOMES_TIPO.office : NOMES_TIPO.home;
+  return window.RA_DIA.NOMES[window.RA_DIA.tipoDe(k, tipos)];
 }
 function csvEsc(v) {
   let s = String(v == null ? "" : v);

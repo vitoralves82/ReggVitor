@@ -9,7 +9,9 @@
    - Nenhum ranking mensal, nenhum troféu que reinicia.
    ========================================================================= */
 
-var H0 = 4;
+/* Dia lógico, tipo de dia e as réguas derivadas moram em dia.js, para o
+   painel e o registro rápido compararem exatamente a mesma coisa. */
+var H0 = window.RA_DIA.H0;
 
 /* Fora da extensão (abrindo o arquivo direto no navegador) não existe
    chrome.storage; um espelho em localStorage mantém a página funcional. */
@@ -35,9 +37,9 @@ if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
 }
 
 var TIPOS = {
-  home:   { nome: "Home office", cor: "var(--blue)",   classe: "b-home" },
-  office: { nome: "Escritório",  cor: "var(--violet)", classe: "b-office" },
-  off:    { nome: "Dia off",     cor: "var(--warn)",   classe: "b-off" }
+  home:   { nome: window.RA_DIA.NOMES.home,   cor: "var(--blue)",   classe: "b-home" },
+  office: { nome: window.RA_DIA.NOMES.office, cor: "var(--violet)", classe: "b-office" },
+  off:    { nome: window.RA_DIA.NOMES.off,    cor: "var(--warn)",   classe: "b-off" }
 };
 var GAT = ["", "tédio", "ansiedade", "social", "ritual", "hábito", "lazer"];
 var DIAS_SEM = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -51,12 +53,7 @@ function hm(min) {
   var m = Math.max(0, Math.round(min)), h = Math.floor(m / 60);
   return h > 0 ? h + "h" + String(m % 60).padStart(2, "0") : m + "min";
 }
-function mediana(a) {
-  if (!a.length) return 0;
-  var s = a.slice().sort(function (x, y) { return x - y; });
-  var i = Math.floor(s.length / 2);
-  return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
-}
+function mediana(a) { return window.RA_DIA.mediana(a); }
 function media(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : 0; }
 function pad2(v) { return String(v).padStart(2, "0"); }
 function hFmt(h) {
@@ -122,18 +119,10 @@ function rs(v) { return "R$ " + (Math.round(v * 100) / 100).toLocaleString("pt-B
 function rs0(v) { return "R$ " + Math.round(v).toLocaleString("pt-BR"); }
 
 /* ------------------------- dia lógico (04h) ------------------------- */
-function chaveLogica(ts) {
-  var d = new Date(ts - H0 * 3600000);
-  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-}
-function chaveDe(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
-function chaveParaData(k) { var p = k.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
-function tipoDe(k) {
-  if (S.tipos[k]) return S.tipos[k];
-  var wd = chaveParaData(k).getDay();
-  if (wd === 0 || wd === 6) return "off";
-  return (wd === 2 || wd === 4) ? "office" : "home";
-}
+function chaveLogica(ts) { return window.RA_DIA.chaveLogica(ts); }
+function chaveDe(d) { return window.RA_DIA.chaveDe(d); }
+function chaveParaData(k) { return window.RA_DIA.chaveParaData(k); }
+function tipoDe(k) { return window.RA_DIA.tipoDe(k, S.tipos); }
 /* Datas sempre em formato brasileiro com o mês em três letras: 26/Ago/2026.
    rotuloCurto omite o ano (eixos e faixas de semana), dataBR o mantém. */
 function rotuloCurto(k) { var d = chaveParaData(k); return pad2(d.getDate()) + "/" + MES3[d.getMonth()]; }
@@ -198,10 +187,18 @@ function carregar() {
    gravação daqui (o bug crítico da versão anterior). */
 if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener(function (ch, area) {
-    if (area !== "local" || !ch.registros) return;
-    if (ch.registros.newValue === S.escritaPropria) return; // gravação desta página
-    try { S.regs = ch.registros.newValue ? normalizar(JSON.parse(ch.registros.newValue)) : []; } catch (e) { return; }
-    render();
+    if (area !== "local") return;
+    if (ch.registros && ch.registros.newValue === S.escritaPropria) return; // gravação desta página
+    var mudou = false;
+    if (ch.registros) {
+      try { S.regs = ch.registros.newValue ? normalizar(JSON.parse(ch.registros.newValue)) : []; mudou = true; } catch (e) {}
+    }
+    /* O popup também classifica o dia (home office / escritório / off), e é a
+       classificação que define contra qual linha o dia é medido. */
+    if (ch.tiposDia) {
+      try { S.tipos = ch.tiposDia.newValue ? JSON.parse(ch.tiposDia.newValue) : {}; mudou = true; } catch (e) {}
+    }
+    if (mudou) render();
   });
 }
 
@@ -267,10 +264,7 @@ function analisar() {
   var roll = rollDe(mmP);
   var rollCurto = mmC > 0 ? rollDe(mmC) : null;
 
-  var baseTipo = {};
-  Object.keys(TIPOS).forEach(function (t) {
-    baseTipo[t] = mediana(completos.filter(function (d) { return d.tipo === t; }).map(function (d) { return d.g; }));
-  });
+  var baseTipo = window.RA_DIA.baseTipoDe(completos);
 
   function gapsDe(arr) { var a = []; arr.forEach(function (d) { a = a.concat(d.gaps); }); return a; }
   var g14 = gapsDe(completos.slice(-14)), g14a = gapsDe(completos.slice(-28, -14));
@@ -292,11 +286,8 @@ function analisar() {
 
   /* Alvo da média principal hoje e o fator que ele impõe sobre cada tipo de
      dia: é isso que dá o "alvo do dia" no calendário. */
-  var pctMeta = S.cfg.meta || 0;
-  var ancora = jan.length ? roll[dias.length - jan.length] : 0;
-  var alvoPrinc = ancora * Math.pow(1 - pctMeta / 100, jan.length / 30);
-  var medGlobal = completos.length ? mediana(completos.map(function (d) { return d.g; })) : 0;
-  var ratioMeta = (medGlobal > 0 && alvoPrinc > 0) ? Math.min(1, alvoPrinc / medGlobal) : 1;
+  var meta = window.RA_DIA.ratioMetaDe(dias, completos, S.cfg, roll);
+  var alvoPrinc = meta.alvoPrinc, medGlobal = meta.medGlobal, ratioMeta = meta.ratioMeta;
 
   /* Um dia sem registro tem g = 0 e passaria em qualquer comparação "na sua
      linha" — isso premiaria esquecer de anotar. Só dia com registro conta. */

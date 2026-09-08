@@ -231,7 +231,7 @@
     .stat .sub { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
     .stat.acc { border-color: var(--accent); background: var(--accent-soft); }
     .stat.acc .val { color: var(--accent-strong); }
-    /* Distância até a média diária dos 7 dias anteriores */
+    /* Distância até a linha do mesmo tipo de dia (home office / escritório / off) */
     .pace { margin-top: 7px; }
     .pace .ptrack {
       height: 4px;
@@ -250,6 +250,36 @@
       text-overflow: ellipsis;
     }
     .pace .ptxt b { font-weight: 700; }
+    /* Tipo do dia: a comparação só é honesta se o dia estiver classificado */
+    .tipos {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+      align-items: center;
+      justify-content: center;
+    }
+    .tipos .lab {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+    }
+    .tipo-chip {
+      width: auto;
+      margin: 0;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tipo-chip:hover { background: var(--surface-3); color: var(--text); }
+    .tipo-chip.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
     #popupMsg {
       margin-top: 7px;
       font-size: 11.5px;
@@ -312,7 +342,10 @@
     <div class="ptrack"><i id="paceFill"></i></div>
     <div class="ptxt" id="paceTxt"></div>
   </div>
+  <!-- Classificação do dia: define contra qual linha o dia é medido -->
+  <div class="tipos" id="popupTipos"></div>
   <div id="popupMsg"></div>
+  <script src="dia.js"></script>
   <script src="mensagens.js"></script>
   <script src="popup.js"></script>
 </body>
