@@ -1,14 +1,12 @@
-# Registro de Atividade — painel v2.1
+# Registro de Atividade — painel v2
 
-> English version: [README.md](README.md)
-
-Painel local para registrar, entender padrões e conduzir uma redução progressiva
-até zero. A versão 2.1 reúne a versão mais recente usada no Chrome com melhorias
-de contraste, orientação prática e progressão.
+Substitui **apenas** `index.html` e `script.js`. `popup.html`, `manifest.json`,
+`background.js` e `icon.png` continuam iguais (`popup.js` tem uma linha alterada,
+descrita abaixo).
 
 ## Como instalar
 
-1. Baixe ou clone esta pasta.
+1. Copie esta pasta por cima da pasta da extensão (ou faça commit no repo).
 2. `chrome://extensions` → recarregar a extensão.
 3. Seus dados **já estão lá**: o painel lê a mesma chave `registros` do
    `chrome.storage.local`. Não é preciso importar nada.
@@ -31,63 +29,17 @@ resumo dessincronizado. Pode apagá-la depois, se quiser.
 
 ## Estrutura de dados
 
-Registro: `{ data, hora, quantidade, timestamp, gatilho, nota }` — `gatilho` e
-`nota` são opcionais. Chaves adicionais no storage:
+Registro: `{ data, hora, quantidade, timestamp, gatilho }` — `gatilho` é novo e
+opcional; o popup preserva o campo. Chaves adicionais no storage:
 
 - `tiposDia` — `{ "2026-07-25": "off", ... }`, só os dias que você corrigiu à mão.
   O padrão vem do dia da semana (sáb/dom = off, ter/qui = escritório, resto = home office).
-- `config` — janela, meta %/mês e tema.
+- `config` — janela, meta %/mês, tema, tom irônico, modo discreto.
 
-## Como ler o painel
+## Alterações no popup
 
-1. Compare a média de 7 dias com a semana anterior e com a trajetória da meta.
-2. Encontre onde o consumo se concentra: tipo de dia, horário e motivo.
-3. Teste uma única alavanca por 7 dias e veja se a média respondeu.
-
-A **Rota de redução** usa a primeira semana completa como linha de base e mostra
-os marcos de 10%, 25%, 50%, 75% e uma semana em zero. Ela indica direção, não um
-diagnóstico clínico.
-
-## Registro rápido
-
-O popup mostra o total de hoje, os últimos 7 dias e o intervalo desde o último
-registro. A mensagem abaixo dos cartões sempre propõe uma direção simples:
-proteger ou alongar o próximo intervalo, sem compensações bruscas.
-
-Abaixo dos cartões, a barra e a frase comparam o dia com a **linha do mesmo
-tipo de dia**, não com uma média única de todos os dias. Um sábado é comparado
-com a mediana dos seus dias off, uma terça no escritório com a mediana dos dias
-de escritório. Misturar populações diferentes produz um alerta que não orienta
-nada: quase todo dia off apareceria como "acima da média" e quase todo dia útil
-como "abaixo".
-
-Regras da comparação:
-
-- A referência é a **mediana** dos dias completos daquele tipo, não a média:
-  um único dia atípico não desloca a régua do dia seguinte.
-- O dia de hoje nunca entra na própria referência, porque ainda está aberto.
-- Dias sem nenhum registro entram na conta como 0 g. São eles que puxam a
-  linha para baixo.
-- Com menos de 3 dias completos daquele tipo, a amostra ainda é ruído: a frase
-  cai para a média diária geral e avisa que faltam dias para comparar.
-
-Os três botões "Hoje é" classificam o dia direto no popup (home office,
-escritório, dia off) e a comparação é refeita na hora. Isso importa porque o
-padrão vem apenas do dia da semana (sábado e domingo = off, terça e quinta =
-escritório, resto = home office) e erra em feriado, folga no meio da semana ou
-escritório fora do dia habitual. A classificação é gravada em `tiposDia`, a
-mesma chave usada pelo painel, que se atualiza sozinho quando está aberto.
-
-O tema selecionado na página completa também é aplicado ao popup.
-
-## Arquivos
-
-| Arquivo | Papel |
-|---|---|
-| `dia.js` | Dia lógico (04h), tipo de dia e a linha (mediana) de cada tipo. Compartilhado pelo painel e pelo popup, para as duas telas usarem a mesma régua. |
-| `script.js` | Painel completo: agregação, gráficos, calendário e rota de redução. |
-| `popup.js` | Registro rápido: entrada, cartões do dia e comparação com a linha do tipo de dia. |
-| `mensagens.js` | Banco de frases de direção, escolhidas pelo estado do dia. |
+Só uma: o contador "Hoje" passou a usar o dia lógico de 04h (e mostra gramas),
+para as duas telas não discordarem quando há registro de madrugada.
 
 ## Fora da extensão
 
